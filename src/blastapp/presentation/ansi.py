@@ -1,0 +1,27 @@
+"""Kody ANSI używane w wyjściu terminalowym.
+
+Tylko te, które mają konsumenta — stała bez użycia to kod do utrzymywania bez powodu (#21).
+"""
+
+BG_BLUE = "\033[44m"
+BG_DARK_GRAY = "\033[100m"
+BG_GREEN = "\033[42m"
+BG_LIGHT_BLUE = "\033[104m"
+BG_LIGHT_GRAY = "\033[47m"
+BG_LIGHT_GREEN = "\033[102m"
+BG_LIGHT_YELLOW = "\033[103m"
+BG_MAGENTA = "\033[45m"
+BG_RED = "\033[41m"
+BLACK = "\033[30m"
+BLACK_TEXT = "\033[30m"
+BLUE = "\033[94m"
+CYAN = "\033[96m"
+GRAY = "\033[90m"
+GREEN = "\033[92m"
+LIGHT_BLUE = "\033[94m"
+MAGENTA = "\033[35m"
+RED = "\033[91m"
+RESET = "\033[0m"
+WHITE = "\033[97m"
+WHITE_TEXT = "\033[97m"
+YELLOW = "\033[93m"

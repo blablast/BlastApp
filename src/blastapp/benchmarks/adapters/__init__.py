@@ -1,0 +1,1 @@
+"""Adaptery poszczególnych solverów."""

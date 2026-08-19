@@ -1,0 +1,65 @@
+[project]
+name = "blastapp"
+version = "0.1.0"
+description = "Interaktywna aplikacja Streamlit do rozwiazywania wyrazen logicznych (Logika Binarna)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "graphviz>=0.21",
+    "ipython>=9.16.1",
+    "matplotlib>=3.11.1",
+    "numpy>=2.5.2",
+    "pandas>=3.0.5",
+    "plotly>=6.9.0",
+    "pyeda>=0.29.0",
+    "python-sat>=1.9.dev15",
+    "scipy>=1.18.0",
+    "streamlit>=1.61.1",
+    "sympy>=1.14.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/blastapp"]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.140.2",
+    "mypy>=1.19.0",
+    "pandas-stubs>=3.0.5.260730",
+    "pytest>=9.0.1",
+    "ruff>=0.15.1",
+]
+
+[tool.uv]
+package = true
+
+# pyeda 0.29.0 bundles espresso C sources that trip clang 16+'s
+# -Werror=incompatible-function-pointer-types; downgrade it back to a warning.
+[tool.uv.extra-build-variables]
+pyeda = { CFLAGS = "-Wno-incompatible-function-pointer-types" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "TID"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["src/blastapp", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+
+# Te biblioteki nie dostarczaja stubow ani znacznika py.typed.
+[[tool.mypy.overrides]]
+module = ["pysat.*", "scipy.*", "graphviz.*", "plotly.*", "sympy.*", "pyeda.*"]
+ignore_missing_imports = true
