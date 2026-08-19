@@ -26,7 +26,9 @@ def render_ota_details(result: SolverResult, texts: dict[str, str]) -> None:
         return
 
     st.write(texts["variable_mapping"])
-    mapping = variable_mapping_frame(result).T
+    mapping = variable_mapping_frame(
+        result, texts["column_binary_variable"], texts["column_propositional_variable"]
+    ).T
     mapping.columns = pd.RangeIndex(mapping.shape[1])
     st.dataframe(mapping.style.apply(_highlight_renamed, axis=0))
 

@@ -32,4 +32,10 @@ TEXTS: dict[str, str] = {
     "solution_details": "Solution details",
     "time_comparison": "Execution time comparison",
     "variable_mapping": "Mapping of propositional variables to binary algebra variables:",
+    "chart_title": "Execution times by engine",
+    "chart_engine": "Engine",
+    "chart_time": "Execution time (ms)",
+    "column_result": "Result",
+    "column_binary_variable": "Binary algebra variable",
+    "column_propositional_variable": "Propositional variable",
 }

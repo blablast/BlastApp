@@ -72,8 +72,8 @@ def _report(result: SolverResult, engine: SolverEngine) -> None:
     elif statistics.is_contradiction:
         print(f"{BG_RED}{WHITE} C O N T R A D I C T I O N {RESET}")
     else:
-        print(variable_mapping_frame(result))
-        display(results_frame(result))
+        print(variable_mapping_frame(result, "Binary algebra variable", "Propositional variable"))
+        display(results_frame(result, "Result"))
 
 
 def _render_graph(formula: Formula) -> None:

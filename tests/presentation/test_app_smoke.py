@@ -82,3 +82,10 @@ def test_broken_expression_shows_an_error_not_a_crash(app: AppTest) -> None:
     solved = solve(app, "(a0 & a1")
     assert not solved.exception
     assert solved.error, "błędna formuła ma dać komunikat"
+
+
+def test_ota_function_is_rendered_once(app: AppTest) -> None:
+    """Panel funkcji OTA jest wspólny dla silników, a każdy liczy tę samą funkcję."""
+    solved = solve(app, "(a0 & a1) | (a1 & a2) | (a2 & a0)")
+    assert not solved.exception
+    assert len(solved.latex) == 1, f"równanie OTA powtórzone {len(solved.latex)} razy"

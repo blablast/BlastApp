@@ -32,4 +32,10 @@ TEXTS: dict[str, str] = {
     "solution_details": "Szczegóły rozwiązania",
     "time_comparison": "Porównanie czasów",
     "variable_mapping": "Przypisanie zmiennych zdaniowych do zmiennych algebry binarnej:",
+    "chart_title": "Czasy wykonania silników",
+    "chart_engine": "Silnik",
+    "chart_time": "Czas wykonania (ms)",
+    "column_result": "Wynik",
+    "column_binary_variable": "Zmienna algebry binarnej",
+    "column_propositional_variable": "Zmienna zdaniowa",
 }

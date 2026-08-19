@@ -75,11 +75,12 @@ def _solve_and_render(expression: str, selection: SidebarSelection, texts: dict[
             continue
 
         results.append(result)
-        render_solver_section(result, texts, ota_container)
+        # Funkcję OTA rysujemy raz: każdy silnik liczy tę samą, a panel jest wspólny.
+        render_solver_section(result, texts, ota_container if len(results) == 1 else None)
 
     if results:
         _section(texts["time_comparison"])
-        render_timing_chart(results)
+        render_timing_chart(results, texts)
 
 
 def _solve(

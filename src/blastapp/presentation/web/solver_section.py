@@ -8,7 +8,7 @@ from streamlit.delta_generator import DeltaGenerator
 
 from blastapp.domain.solving.result import SolverResult
 from blastapp.domain.solving.statistics import SolutionStatistics
-from blastapp.presentation.tables import RESULT_COLUMN, results_frame
+from blastapp.presentation.tables import results_frame
 from blastapp.presentation.theme import STATISTICS_BACKGROUND
 from blastapp.presentation.web.ota_section import render_ota_details
 
@@ -40,15 +40,16 @@ def render_solver_section(
 
 def render_result_tables(result: SolverResult, texts: dict[str, str]) -> None:
     """Rysuje wartościowania prawdziwe i fałszywe obok siebie."""
-    frame = results_frame(result)
+    result_column = texts["column_result"]
+    frame = results_frame(result, result_column)
     true_column, false_column = st.columns(2)
 
     with true_column:
         st.subheader(texts["true_results"])
-        st.dataframe(frame[frame[RESULT_COLUMN]], width="stretch")
+        st.dataframe(frame[frame[result_column]], width="stretch")
     with false_column:
         st.subheader(texts["false_results"])
-        st.dataframe(frame[~frame[RESULT_COLUMN]], width="stretch")
+        st.dataframe(frame[~frame[result_column]], width="stretch")
 
 
 def statistics_banner(statistics: SolutionStatistics, texts: dict[str, str]) -> str:
