@@ -1,8 +1,8 @@
-"""Adapter solvera PyEDA.
+"""Adapter for the PyEDA solver.
 
-UWAGA: pyeda 0.29.0 potrafi zabić cały proces sygnałem SIGSEGV w `satisfy_all()`, niezależnie
-od kodu tej aplikacji. Segfaultu nie da się przechwycić, więc obecność tego adaptera na liście
-przerywa cały przebieg — dlatego nie ma go w zestawie domyślnym.
+WARNING: pyeda 0.29.0 can kill the whole process with SIGSEGV inside `satisfy_all()`, regardless
+of this application's code. A segfault cannot be caught, so having this adapter on the list
+aborts the entire run — which is why it is not in the default set.
 """
 
 from collections.abc import Sequence

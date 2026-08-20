@@ -1,4 +1,4 @@
-"""Węzły AST: niemutowalność, pilnowanie arności i pozycje bitowe."""
+"""AST nodes: immutability, arity enforcement and bit positions."""
 
 import dataclasses
 
@@ -21,19 +21,19 @@ def test_nodes_are_immutable() -> None:
 
 
 def test_nodes_compare_by_value() -> None:
-    """Węzły porównują się treścią, nie tożsamością — dwie identyczne podformuły są równe."""
+    """Nodes compare by content, not identity: two identical subformulas are equal."""
     assert VariableNode(0, "a0") == VariableNode(0, "a0")
     assert VariableNode(0, "a0", negated=True) != VariableNode(0, "a0")
     assert ConstantNode(True) != ConstantNode(False)
 
 
 def test_bit_position_must_be_non_negative() -> None:
-    with pytest.raises(ValueError, match="ujemna"):
+    with pytest.raises(ValueError, match="cannot be negative"):
         VariableNode(index=-1, name="a0")
 
 
 def test_variable_must_have_a_name() -> None:
-    with pytest.raises(ValueError, match="nazwę"):
+    with pytest.raises(ValueError, match="needs a name"):
         VariableNode(index=0, name="")
 
 
@@ -60,7 +60,7 @@ def test_arity_is_enforced_at_construction(
     if ok:
         assert len(OperationNode(operator, operands).operands) == operand_count
     else:
-        with pytest.raises(ValueError, match="argument"):
+        with pytest.raises(ValueError, match="operand"):
             OperationNode(operator, operands)
 
 
@@ -73,7 +73,7 @@ def test_walk_visits_every_subtree() -> None:
 
 
 def test_variable_count_uses_highest_bit_position() -> None:
-    """Liczy się najwyższa pozycja bitu, a nie liczba różnych zmiennych."""
+    """What counts is the highest bit position, not the number of distinct variables."""
     tree = OperationNode(Operator.AND, (VariableNode(0, "a0"), VariableNode(3, "a3")))
     assert variable_count(tree) == 4
     assert variable_count(ConstantNode(True)) == 0

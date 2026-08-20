@@ -1,7 +1,7 @@
-"""Przydział pozycji bitowych: rejestry i ich użycie w parserze.
+"""Bit position assignment: the registries and how the parser uses them.
 
-Pozycja bitu jest używana arytmetycznie jako `1 << pozycja`, więc dwie nazwy na tej samej pozycji
-to dwie zmienne sklejone w jedną — i formuła licząca coś innego, niż napisał użytkownik.
+The position is used arithmetically as `1 << position`, so two names on one position are two
+variables fused into one — and a formula computing something other than what the user wrote.
 """
 
 import pytest
@@ -39,7 +39,7 @@ class TestIndexedRegistry:
         assert registry.position_for("a1") == 1
 
     def test_other_names_take_the_first_free_position(self) -> None:
-        """Pierwsza WOLNA pozycja, a nie kolejna po liczbie już przydzielonych."""
+        """The first FREE position, not the one after however many are already assigned."""
         registry = IndexedVariableRegistry()
         registry.reserve("a1", 1)
         assert registry.position_for("p") == 0
@@ -48,11 +48,11 @@ class TestIndexedRegistry:
     def test_reserving_a_taken_position_is_refused(self) -> None:
         registry = IndexedVariableRegistry()
         registry.reserve("a0", 0)
-        with pytest.raises(ValueError, match="zajęta"):
+        with pytest.raises(ValueError, match="already taken"):
             registry.reserve("a1", 0)
 
     def test_reserving_the_same_name_twice_is_harmless(self) -> None:
-        """Nazwa może wystąpić w tekście wielokrotnie, więc rezerwacja się powtarza."""
+        """A name can occur several times in the text, so the reservation repeats."""
         registry = IndexedVariableRegistry()
         registry.reserve("a2", 2)
         registry.reserve("a2", 2)
@@ -90,6 +90,6 @@ class TestParserIntegration:
         assert positions_of("a5 & a3", recognize=False) == {"a5": 0, "a3": 1}
 
     def test_named_variables_never_share_a_position(self) -> None:
-        """`a1 & p & q` ma trzy różne zmienne; sklejenie ich dałoby `a1 & a1 & a1`."""
+        """`a1 & p & q` has three distinct variables; fusing them would give `a1 & a1 & a1`."""
         positions = positions_of("a1 & p & q", recognize=True)
         assert len(set(positions.values())) == 3

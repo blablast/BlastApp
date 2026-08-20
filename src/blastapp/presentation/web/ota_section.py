@@ -1,4 +1,4 @@
-"""Sekcja ze szczegółami funkcji OTA: równanie, współczynniki i mapowanie zmiennych."""
+"""OTA function details: equation, coefficients and variable mapping."""
 
 import pandas as pd
 import streamlit as st
@@ -14,7 +14,7 @@ PROPOSITIONAL_COLUMN = "Propositional Variable"
 
 
 def render_ota_details(result: SolverResult, texts: dict[str, str]) -> None:
-    """Rysuje równanie OTA, tabelę współczynników i mapowanie zmiennych."""
+    """Draws the OTA equation, the coefficient table and the variable mapping."""
     ota_function = result.ota_function
     if ota_function is None:
         return
@@ -34,6 +34,6 @@ def render_ota_details(result: SolverResult, texts: dict[str, str]) -> None:
 
 
 def _highlight_renamed(column: pd.Series) -> list[str]:
-    """Podświetla kolumny, w których nazwa użytkownika różni się od zmiennej algebry."""
+    """Highlights columns where the user name differs from the algebra variable."""
     renamed = column.iloc[0] != column.iloc[1]
     return [RENAMED_VARIABLE_STYLE if renamed else "" for _ in column]

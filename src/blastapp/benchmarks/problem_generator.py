@@ -1,8 +1,8 @@
-"""Generuje losowe instancje k-SAT.
+"""Generates random k-SAT instances.
 
-Losowość pochodzi z **własnego** `random.Random`, nie z modułu `random`. Ziarno ustawione
-globalnie znaczy, że każde inne użycie `random` w tym samym procesie zmienia wygenerowane
-instancje, a przebieg przestaje być powtarzalny.
+Randomness comes from an **own** `random.Random`, not from the module. Seeding globally would
+mean that any other use of `random` in the process changes the generated instances and the run
+stops being reproducible.
 """
 
 import random
@@ -27,34 +27,22 @@ class SatInstance:
 
 
 class SatProblemGenerator:
-    """Źródło powtarzalnych instancji k-SAT."""
+    """A reproducible source of k-SAT instances."""
 
     def __init__(self, seed: int = 42) -> None:
-        """
-        :param seed: Ziarno własnego generatora liczb losowych.
-        :type seed: int
-        """
+        """ """
         self._random = random.Random(seed)
 
     def random_instance(
         self, variable_count: int, clause_count: int, clause_size: int
     ) -> SatInstance:
-        """
-        Generuje jedną instancję.
-
-        :param variable_count: Liczba zmiennych (>= 1).
-        :param clause_count: Liczba klauzul (>= 1).
-        :param clause_size: Liczba literałów w klauzuli; przycinana do liczby zmiennych.
-        :return: Instancja k-SAT.
-        :rtype: SatInstance
-        :raises ValueError: Gdy którykolwiek rozmiar jest mniejszy od jedynki.
-        """
+        """:raises ValueError: when any of the sizes is below one."""
         if variable_count < 1:
-            raise ValueError(f"Liczba zmiennych musi być dodatnia, jest {variable_count}")
+            raise ValueError(f"Variable count must be positive, got {variable_count}")
         if clause_count < 1:
-            raise ValueError(f"Liczba klauzul musi być dodatnia, jest {clause_count}")
+            raise ValueError(f"Clause count must be positive, got {clause_count}")
         if clause_size < 1:
-            raise ValueError(f"Klauzula musi mieć co najmniej jeden literał, ma {clause_size}")
+            raise ValueError(f"A clause needs at least one literal, got {clause_size}")
 
         clause_size = min(clause_size, variable_count)
         clauses = [

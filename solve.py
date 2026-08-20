@@ -1,4 +1,4 @@
-"""CLI: rozwiązuje wyrażenie logiczne wybranymi silnikami."""
+"""CLI: solves a propositional expression with the chosen engines."""
 
 import argparse
 
@@ -31,7 +31,7 @@ from blastapp.presentation.text.tree_printer import render_tree
 
 
 def solve_expression(expression: str, engine_keys: list[str]) -> None:
-    """Parsuje raz i przepuszcza formułę przez kolejne silniki."""
+    """Parse once, then run the formula through each engine."""
     try:
         formula = parse_formula(expression)
     except ExpressionError as error:
@@ -54,7 +54,7 @@ def solve_expression(expression: str, engine_keys: list[str]) -> None:
 
 
 def _report(result: SolverResult, engine: SolverEngine) -> None:
-    """Wypisuje wynik. Nie pyta, który silnik pracował — wystarczy `SolverResult`."""
+    """Print the result; `SolverResult` is enough, no need to ask which engine ran."""
     print(f"{LIGHT_BLUE}Solved in {result.duration_seconds:.6f} seconds.{RESET}")
 
     if result.has_ota_function:
@@ -77,10 +77,10 @@ def _report(result: SolverResult, engine: SolverEngine) -> None:
 
 
 def _render_graph(formula: Formula) -> None:
-    """Zapisuje rysunek drzewa do pliku, o ile w systemie jest Graphviz.
+    """Write the tree drawing to a file when Graphviz is installed.
 
-    Bez binarki `dot` rysowanie jest niemożliwe, ale rozwiązywanie owszem — brak Graphviza nie
-    może przerywać pracy CLI.
+    Without the `dot` binary drawing is impossible but solving is not, so a missing Graphviz must
+    not stop the CLI.
     """
     try:
         build_graph(formula).render("logic_tree", cleanup=True, view=True)

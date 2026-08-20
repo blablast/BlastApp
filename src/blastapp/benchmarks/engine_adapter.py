@@ -1,6 +1,6 @@
-"""Kontrakt adaptera solvera: policz rozwiązania podanej instancji CNF.
+"""Solver adapter contract: count the solutions of a CNF instance.
 
-Jedna metoda, bo tyle wystarczy — mierzenie czasu należy do przebiegu, nie do adaptera (#13, #20).
+One method, because that is enough — timing belongs to the run, not to the adapter (#13, #20).
 """
 
 from abc import ABC, abstractmethod
@@ -8,17 +8,11 @@ from collections.abc import Sequence
 
 
 class SolverAdapter(ABC):
-    """Liczy rozwiązania instancji CNF jednym konkretnym solverem."""
+    """Counts solutions of a CNF instance with one particular solver."""
 
     #: Nazwa pokazywana w raporcie.
     name: str
 
     @abstractmethod
     def count_solutions(self, clauses: Sequence[Sequence[int]]) -> int:
-        """
-        Zwraca liczbę wartościowań spełniających formułę.
-
-        :param clauses: Klauzule w konwencji DIMACS.
-        :return: Liczba rozwiązań.
-        :rtype: int
-        """
+        """Number of assignments satisfying the formula."""

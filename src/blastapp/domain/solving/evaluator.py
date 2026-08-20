@@ -1,9 +1,7 @@
-"""Sprowadza drzewo składniowe do jednego zdania, delegując operacje do algebry.
+"""Reduces the syntax tree to one proposition, delegating operations to an algebra.
 
-Chodzenie po drzewie żyje tu raz, niezależnie od reprezentacji (#10).
-
-Wynik NIE jest zapisywany na węźle — liczenie nie zmienia drzewa, więc ta sama formuła może
-przejść przez oba silniki bez kopiowania.
+The walk lives here once, independent of the representation (#10). The result is NOT stored on a
+node: solving does not mutate the tree, so one formula can go through both engines uncopied.
 """
 
 from blastapp.domain.expressions.formula import Formula
@@ -13,13 +11,13 @@ from blastapp.domain.solving.algebra import PropositionAlgebra
 
 
 class FormulaEvaluator[P]:
-    """Liczy wartość formuły przy pomocy wskazanej algebry."""
+    """Evaluates a formula with a given algebra."""
 
     def __init__(self, algebra: PropositionAlgebra[P]) -> None:
         self._algebra = algebra
 
     def evaluate(self, formula: Formula) -> P:
-        """Zwraca zdanie odpowiadające całej formule."""
+
         return self._evaluate_node(formula.root)
 
     def _evaluate_node(self, node: Node) -> P:
@@ -30,7 +28,7 @@ class FormulaEvaluator[P]:
                 return self._algebra.constant(value)
             case OperationNode(operator=operator, operands=operands):
                 return self._apply(operator, [self._evaluate_node(child) for child in operands])
-        raise TypeError(f"Ewaluator nie zna węzła: {type(node).__name__}")
+        raise TypeError(f"Evaluator does not know node: {type(node).__name__}")
 
     def _apply(self, operator: Operator, operands: list[P]) -> P:
         match operator:
@@ -45,7 +43,6 @@ class FormulaEvaluator[P]:
             case Operator.IMP:
                 return self._algebra.implication(operands[0], operands[1])
             case Operator.XOR:
-                # Alternatywa wykluczająca to zaprzeczona równoważność. Zapisana raz, tutaj,
-                # zamiast osobno w każdej algebrze (#19).
+                # XOR is a negated equivalence, written once here instead of in every algebra (#19).
                 return self._algebra.negation(self._algebra.equivalence(operands[0], operands[1]))
-        raise ValueError(f"Nieobsługiwany operator: {operator}")
+        raise ValueError(f"Unsupported operator: {operator}")

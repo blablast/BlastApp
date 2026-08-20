@@ -1,10 +1,8 @@
-"""Rejestr silników — jedyne miejsce, w którym żyje podział na OTA i Blast (#11).
+"""Engine registry — the only place where the OTA/Blast split lives (#11).
 
-CLI, pola wyboru w panelu bocznym i wykres czasów iterują po `ENGINES`, więc dołożenie silnika
-sprowadza się do jednego wpisu tutaj.
-
-Rejestr jest jawną krotką, bez auto-rejestracji i dekoratorów: co jest na liście, widać wprost
-w kodzie, a IDE potrafi tam przeskoczyć (#03).
+The CLI, the sidebar checkboxes and the timing chart all iterate `ENGINES`, so adding an engine
+is one entry here. The registry is an explicit tuple: no auto-registration, no decorators, and an
+IDE can jump to it (#03).
 """
 
 from dataclasses import dataclass
@@ -12,7 +10,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SolverEngine:
-    """Opis jednego silnika: jak się nazywa i gdzie leży granica jego stosowalności."""
+    """One engine: its name and where its usable range ends."""
 
     key: str
     display_name: str
@@ -20,13 +18,12 @@ class SolverEngine:
     produces_ota_function: bool
 
     def accepts(self, variable_count: int) -> bool:
-        """Czy silnik poradzi sobie z formułą o tylu zmiennych."""
+        """Whether the engine can handle a formula with this many variables."""
         return self.variable_limit is None or variable_count <= self.variable_limit
 
 
-# OTA alokuje tablicę numpy o długości 2^n dla każdej podformuły, więc powyżej dziesięciu
-# zmiennych przestaje być używalny. Blast trzyma całą tablicę prawdy w jednej liczbie i sięga
-# znacznie dalej, więc limitu nie potrzebuje.
+# OTA allocates a 2^n numpy array per subformula, so it stops being usable past ten variables.
+# Blast works on the packed table directly and reaches much further, so it needs no limit.
 OTA_ENGINE = SolverEngine("ota", "OTA Solver", variable_limit=10, produces_ota_function=True)
 BLAST_ENGINE = SolverEngine(
     "blast", "Blast Solver", variable_limit=None, produces_ota_function=True
@@ -38,9 +35,9 @@ _BY_KEY: dict[str, SolverEngine] = {engine.key: engine for engine in ENGINES}
 
 
 def engine_by_key(key: str) -> SolverEngine:
-    """Zwraca silnik o podanym kluczu."""
+    """:raises KeyError: when no engine has that key."""
     try:
         return _BY_KEY[key]
     except KeyError:
         known = ", ".join(_BY_KEY)
-        raise KeyError(f"Nieznany silnik '{key}'; dostępne: {known}") from None
+        raise KeyError(f"Unknown engine '{key}'; available: {known}") from None

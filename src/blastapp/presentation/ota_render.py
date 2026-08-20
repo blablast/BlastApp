@@ -1,7 +1,7 @@
-"""Renderowanie funkcji OTA: tekst, równanie, tabela terminalowa i tabela HTML.
+"""Rendering the OTA function: text, equation, terminal table and HTML table.
 
-Cztery widoki jednej struktury, jako funkcje nad nią, a nie jej metody — dzięki temu algebra nie
-wie ani o kodach ANSI, ani o tym, że jej tabela trafia do Streamlita (#10).
+Four views of one structure, as functions over it rather than methods on it, so the algebra knows
+nothing about ANSI codes or about its table ending up in Streamlit (#10).
 """
 
 import numpy as np
@@ -26,12 +26,6 @@ def expression_text(ota: OtaFunction, reverse: bool = True, multiply_sign: str =
     """
     Converts the OtaFunction to a mathematical expression.
 
-    :param reverse: Whether to reverse the term order in the expression.
-    :type reverse: bool
-    :param multiply_sign: Symbol used for multiplication in the output.
-    :type multiply_sign: str
-    :return: The formatted mathematical expression as a string.
-    :rtype: str
     """
     terms = [
         f"{coefficient}{multiply_sign}{term_text(ota, i)}".rstrip(multiply_sign)
@@ -54,12 +48,6 @@ def equation_text(ota: OtaFunction, expression: str | None = None, reverse: bool
     """
     Formats the expression for use in MS Word equations.
 
-    :param expression: The expression to format. If None, the expression is generated.
-    :type expression: str, optional
-    :param reverse: Whether to reverse the term order in the expression.
-    :type reverse: bool
-    :return: The formatted word equation as a string.
-    :rtype: str
     """
     if expression is None:
         expression = expression_text(ota, reverse)
@@ -71,12 +59,6 @@ def term_text(ota: OtaFunction, number: int, multiple_sign: str = "*") -> str:
     """
     Returns the term for a given index.
 
-    :param multiple_sign: The symbol used for multiplication in the output.
-    :type multiple_sign: str
-    :param number: The index of the term to retrieve.
-    :type number: int
-    :return: The term at the specified index.
-    :rtype: str
     """
     return multiple_sign.join(
         [
@@ -94,10 +76,6 @@ def ansi_table(ota: OtaFunction, print_equation: bool = True) -> str:
     Generates a formatted string representation of the OtaFunction,
     including the n, bn, and tn arrays.
 
-    :param print_equation: Whether to include the formatted equation in the output.
-    :type print_equation: bool
-    :return: Formatted string showing the values of n, bn, and tn arrays.
-    :rtype: str
     """
     if ota.tn.size == 0:
         return "No data to show."
@@ -110,14 +88,6 @@ def ansi_table(ota: OtaFunction, print_equation: bool = True) -> str:
         'bn' and 'tn' rows based on specific criteria. The 'n:' row is displayed
         as default indices without additional coloring.
 
-        :param label: The label for the row (e.g., "n:", "bn:", "tn:").
-        :type label: str
-        :param array: The array of values to display.
-        :type array: np.ndarray
-        :param cell_width: The width of each cell for alignment. Defaults to 0.
-        :type cell_width: int
-        :return: A formatted string representing the row, with labels and aligned values.
-        :rtype: str
         :raises ValueError: If an unsupported label is provided.
         """
         color_map = {
@@ -141,10 +111,6 @@ def ansi_table(ota: OtaFunction, print_equation: bool = True) -> str:
             This function determines the color of each 'bn' value based on whether
             it is zero or non-zero.
 
-            :param value: The value to format.
-            :type value: int
-            :return: Colored and formatted string for the 'bn' value.
-            :rtype: str
             """
             bg_color, text_color = color_map["bn_nonzero"] if value != 0 else color_map["bn_zero"]
             return f"{bg_color}{text_color}{value:^{cell_width + 1}}{RESET}"
@@ -153,10 +119,6 @@ def ansi_table(ota: OtaFunction, print_equation: bool = True) -> str:
             """
             Applies conditional coloring to 'tn' values based on their magnitude.
 
-            :param value: The value to format.
-            :type value: int
-            :return: Colored and formatted string for the 'tn' value.
-            :rtype: str
             """
             if value == 1:
                 bg_color, text_color = color_map["tn_one"]
@@ -228,8 +190,6 @@ def html_table(ota: OtaFunction, max_width: int = 40) -> str:
     """
     Renders a table for Streamlit with properly enforced column widths.
 
-    :param max_width: Maximum width in pixels for table columns.
-    :return: HTML string for the table.
     """
 
     dark_grey = "#555555"
@@ -239,9 +199,6 @@ def html_table(ota: OtaFunction, max_width: int = 40) -> str:
         """
         Formats a value with appropriate coloring based on the row type (`bn` or `tn`).
 
-        :param value: The value to format.
-        :param row_type: The row type ('bn' or 'tn').
-        :return: HTML string for the table cell with styling.
         """
         styles = {
             "bn": {

@@ -1,4 +1,4 @@
-"""Uruchamia silnik na formule i pakuje wynik we wspólny typ."""
+"""Runs an engine over a formula and packs the result into the shared type."""
 
 from collections.abc import Callable
 from time import perf_counter
@@ -18,16 +18,16 @@ from blastapp.domain.solving.truth_table import TruthTable
 
 
 def build_algebra(engine: SolverEngine) -> PropositionAlgebra[Any]:
-    """Tworzy algebrę wskazaną przez silnik."""
+    """:raises KeyError: when the engine has no algebra."""
     if engine is OTA_ENGINE:
         return OtaAlgebra()
     if engine is BLAST_ENGINE:
         return BitAlgebra()
-    raise KeyError(f"Brak algebry dla silnika '{engine.key}'")
+    raise KeyError(f"No algebra for engine '{engine.key}'")
 
 
 class LogicSolver:
-    """Mierzy czas policzenia formuły jednym silnikiem."""
+    """Times one engine solving one formula."""
 
     def __init__(
         self,
@@ -35,21 +35,14 @@ class LogicSolver:
         clock: Callable[[], float] = perf_counter,
         with_ota_function: bool = True,
     ) -> None:
-        """
-        :param engine: Silnik z rejestru.
-        :param clock: Źródło czasu; wstrzykiwane, żeby test nie musiał mierzyć naprawdę.
-        :param with_ota_function: Czy dołączyć funkcję OTA do wyniku.
-
-        Funkcja OTA jest opcjonalna, bo dla silnika bitowego jej wyliczenie kosztuje wielokrotnie
-        więcej niż samo rozwiązanie — przy czternastu zmiennych rzędu 1,8 ms liczenia wobec
-        kilkudziesięciu milisekund konwersji. Benchmark liczy bez niej.
-        """
+        """The OTA function is optional: for the bitwise engine, converting to it costs far more
+        than solving, so the benchmark runs without it."""
         self._engine = engine
         self._clock = clock
         self._with_ota_function = with_ota_function
 
     def solve(self, formula: Formula) -> SolverResult:
-        """Liczy formułę i zwraca wynik wraz ze zmierzonym czasem."""
+
         algebra = build_algebra(self._engine)
         evaluator = FormulaEvaluator(algebra)
 
@@ -70,7 +63,7 @@ class LogicSolver:
 
     @staticmethod
     def _ota_function_of(truth_table: TruthTable) -> OtaFunction:
-        """Buduje funkcję OTA z tablicy prawdy."""
+
         return OtaFunction().from_bn(
             np.array([int(value) for value in truth_table.as_values()], dtype=np.int64)
         )

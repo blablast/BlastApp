@@ -1,1 +1,1 @@
-"""Porównanie wydajności silników tej aplikacji z zewnętrznymi solverami SAT."""
+"""Performance comparison of this application's engines against external solvers."""

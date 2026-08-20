@@ -1,7 +1,7 @@
-"""Test dymny GUI przez wbudowany harness Streamlita.
+"""GUI smoke test through Streamlit's own harness.
 
-Jedyny sposób, żeby sprawdzić, że pętla po rejestrze silników faktycznie renderuje obie sekcje,
-bez otwierania przeglądarki.
+The only way to check that the loop over the engine registry actually renders both sections,
+without opening a browser.
 """
 
 from pathlib import Path
@@ -11,7 +11,7 @@ from streamlit.testing.v1 import AppTest
 
 from blastapp.domain.solving.engines import ENGINES
 
-# Ścieżki w AppTest są liczone względem pliku testu, nie katalogu uruchomienia.
+# AppTest resolves paths against the test file, not the working directory.
 APP = str(Path(__file__).resolve().parents[2] / "app.py")
 
 
@@ -33,7 +33,7 @@ def test_app_starts_without_error(app: AppTest) -> None:
 
 
 def test_solver_checkboxes_come_from_the_engine_registry(app: AppTest) -> None:
-    """Dołożenie silnika ma wystarczyć do pojawienia się pola wyboru."""
+    """Adding an engine should be enough for its checkbox to appear."""
     labels = {checkbox.label for checkbox in app.checkbox}
     assert {engine.display_name for engine in ENGINES} <= labels
 
@@ -45,11 +45,11 @@ def test_both_engines_render_a_section(app: AppTest) -> None:
     for engine in ENGINES:
         assert engine.display_name in headers
     assert not solved.error
-    assert solved.dataframe, "sekcja wyniku powinna zawierać tabelę wartościowań"
+    assert solved.dataframe, "the result section should hold the assignments table"
 
 
 def test_engine_over_its_variable_limit_says_so(app: AppTest) -> None:
-    """Silnik ponad limitem mówi o tym wprost, zamiast po cichu nie policzyć."""
+    """An engine over its limit says so instead of silently not running."""
     solved = solve(app, " & ".join(f"a{i}" for i in range(12)))
     assert not solved.exception
 
@@ -57,17 +57,17 @@ def test_engine_over_its_variable_limit_says_so(app: AppTest) -> None:
     assert any("OTA Solver" in message and "12" in message for message in messages)
 
     headers = [subheader.value for subheader in solved.subheader]
-    assert "OTA Solver" not in headers, "silnik ponad limitem nie powinien liczyć"
-    assert "Blast Solver" in headers, "silnik bez limitu ma liczyć dalej"
+    assert "OTA Solver" not in headers, "an engine over its limit must not run"
+    assert "Blast Solver" in headers, "an engine without a limit keeps running"
 
-    # Nagłówek sekcji powstaje PRZED liczeniem, więc sam w sobie nie dowodzi niczego o wyniku.
-    # Brak komunikatu o przekroczeniu czasu jest tu równie istotny jak obecność tabel.
+    # The heading is emitted BEFORE solving, so on its own it proves nothing about the result.
+    # The absence of a timeout message matters as much here as the presence of the tables.
     assert not solved.error, [error.value for error in solved.error]
-    assert solved.dataframe, "Blast powinien policzyć i pokazać wyniki"
+    assert solved.dataframe, "Blast should solve and show results"
 
 
 def test_solving_finishes_well_within_the_timeout(app: AppTest) -> None:
-    """Limit czasu ma chronić przed zawieszeniem, a nie spowalniać zwykłe rozwiązywanie."""
+    """The time limit guards against hangs; it must not slow ordinary solving."""
     import time
 
     started = time.perf_counter()
@@ -75,17 +75,17 @@ def test_solving_finishes_well_within_the_timeout(app: AppTest) -> None:
     elapsed = time.perf_counter() - started
 
     assert not solved.error
-    assert elapsed < 5, f"rozwiązanie 12 zmiennych zajęło {elapsed:.1f} s"
+    assert elapsed < 5, f"solving 12 variables took {elapsed:.1f} s"
 
 
 def test_broken_expression_shows_an_error_not_a_crash(app: AppTest) -> None:
     solved = solve(app, "(a0 & a1")
     assert not solved.exception
-    assert solved.error, "błędna formuła ma dać komunikat"
+    assert solved.error, "a broken formula must produce a message"
 
 
 def test_ota_function_is_rendered_once(app: AppTest) -> None:
-    """Panel funkcji OTA jest wspólny dla silników, a każdy liczy tę samą funkcję."""
+    """The OTA panel is shared: every engine computes the same function."""
     solved = solve(app, "(a0 & a1) | (a1 & a2) | (a2 & a0)")
     assert not solved.exception
-    assert len(solved.latex) == 1, f"równanie OTA powtórzone {len(solved.latex)} razy"
+    assert len(solved.latex) == 1, f"the OTA equation appears {len(solved.latex)} times"

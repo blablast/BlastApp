@@ -1,8 +1,7 @@
-"""Niezależny wzorzec: liczy wartość formuły wprost z drzewa, wartościowanie po wartościowaniu.
+"""An independent oracle: evaluates a formula straight off the tree, assignment by assignment.
 
-Celowo naiwny i wolny — jego jedynym zadaniem jest być oczywiście poprawnym punktem odniesienia.
-Nie korzysta z kodu algebr ani z reprezentacji OTA i bitowej, więc błąd w nich nie może przejść
-niezauważony przez zgodność „obie strony liczą tak samo".
+Deliberately naive and slow — its only job is to be obviously correct. It uses no algebra code and
+neither representation, so a bug in those cannot slip through on "both sides agree".
 """
 
 from blastapp.domain.expressions.formula import Formula
@@ -11,10 +10,7 @@ from blastapp.domain.operators import Operator
 
 
 def evaluate_node(node: Node, assignment: int) -> bool:
-    """Zwraca wartość poddrzewa dla jednego wartościowania.
-
-    :param assignment: Bity wartościowania; bit o numerze k to wartość zmiennej o indeksie k.
-    """
+    """Value of a subtree under one assignment."""
     match node:
         case VariableNode(index=index, negated=negated):
             value = bool((assignment >> index) & 1)
@@ -24,7 +20,7 @@ def evaluate_node(node: Node, assignment: int) -> bool:
         case OperationNode(operator=operator, operands=operands):
             values = [evaluate_node(child, assignment) for child in operands]
             return _apply(operator, values)
-    raise TypeError(f"Wzorzec nie zna węzła: {type(node).__name__}")
+    raise TypeError(f"The oracle does not know node: {type(node).__name__}")
 
 
 def _apply(operator: Operator, values: list[bool]) -> bool:
@@ -45,6 +41,6 @@ def _apply(operator: Operator, values: list[bool]) -> bool:
 
 
 def truth_values(formula: Formula, variable_count: int | None = None) -> list[bool]:
-    """Zwraca wartości formuły dla wszystkich wartościowań, po kolei."""
+    """Values of the formula for every assignment, in order."""
     count = formula.variable_count if variable_count is None else variable_count
     return [evaluate_node(formula.root, i) for i in range(1 << count)]

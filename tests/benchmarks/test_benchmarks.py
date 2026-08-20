@@ -1,6 +1,6 @@
-"""Warstwa benchmarku: generator, adaptery i przebieg.
+"""The benchmark layer: generator, adapters and the run.
 
-Rozmiary są małe celowo — to testy mechaniki, a nie pomiar wydajności (#24 Fast).
+Sizes are small on purpose — these test the mechanics, not performance (#24 Fast).
 """
 
 from collections.abc import Callable, Sequence
@@ -27,7 +27,7 @@ ADAPTERS: list[Callable[[], SolverAdapter]] = [
 
 class TestProblemGenerator:
     def test_same_seed_gives_the_same_instances(self) -> None:
-        """Powtarzalność nie zależy od tego, co jeszcze w procesie używa losowości."""
+        """Reproducibility does not depend on what else in the process uses randomness."""
         first = SatProblemGenerator(7).random_instance(6, 12, 3)
         second = SatProblemGenerator(7).random_instance(6, 12, 3)
         assert first.clauses == second.clauses
@@ -39,7 +39,7 @@ class TestProblemGenerator:
         )
 
     def test_global_random_does_not_disturb_it(self) -> None:
-        """Cudze użycie modułu `random` nie może zmienić wygenerowanych instancji."""
+        """Someone else using the `random` module must not change the generated instances."""
         import random
 
         generator = SatProblemGenerator(5)
@@ -67,7 +67,7 @@ class TestAdaptersAgree:
     def test_every_adapter_counts_the_same(self, variable_count: int) -> None:
         instance = SatProblemGenerator(2024).random_instance(variable_count, 2 * variable_count, 3)
         counts = {adapter().count_solutions(instance.clauses) for adapter in ADAPTERS}
-        assert len(counts) == 1, f"adaptery się rozjechały: {counts}"
+        assert len(counts) == 1, f"the adapters disagree: {counts}"
 
     def test_counts_match_the_domain_solver(self) -> None:
         clauses = [[1, -2], [2, 3]]
@@ -77,8 +77,8 @@ class TestAdaptersAgree:
         assert BlastAdapter().count_solutions(clauses) == 4
 
     def test_baseline_counts_over_the_same_universe_as_the_engines(self) -> None:
-        """Uniwersum sięga największej użytej zmiennej, więc nieużyte pozycje też się liczą."""
-        clauses = [[1, -3]]  # a0 i a2, ale a1 leży pomiędzy: osiem wartościowań, nie cztery
+        """The universe reaches the largest variable used, so unused positions count too."""
+        clauses = [[1, -3]]  # a0 and a2, but a1 sits between them: eight assignments, not four
         assert formula_from_clauses(clauses).variable_count == 3
         assert NaiveDpllAdapter().count_solutions(clauses) == 6
         assert BlastAdapter().count_solutions(clauses) == 6
@@ -106,7 +106,7 @@ class TestRunner:
         assert all(m.seconds is not None and m.seconds >= 0 for m in measurements)
 
     def test_slow_solver_is_skipped_afterwards(self) -> None:
-        """Próg czasu odcina solvera, który nie wyrobił się na mniejszej instancji."""
+        """The threshold cuts off a solver that missed on a smaller instance."""
 
         class Sluggish(SolverAdapter):
             name = "Sluggish"
@@ -120,11 +120,11 @@ class TestRunner:
         settings = self._settings(time_threshold_seconds=0.01)
         measurements = BenchmarkRunner([Sluggish], settings).run()
 
-        assert not measurements[0].was_skipped, "pierwszy przebieg musi się odbyć"
-        assert all(m.was_skipped for m in measurements[1:]), "kolejne mają być pominięte"
+        assert not measurements[0].was_skipped, "the first run must happen"
+        assert all(m.was_skipped for m in measurements[1:]), "the rest must be skipped"
 
     def test_threshold_keeps_the_slowest_time_not_the_last(self) -> None:
-        """Liczy się czas NAJDŁUŻSZEGO przebiegu — jeden szybki nie kasuje pamięci o wolnym."""
+        """The SLOWEST run counts — one fast result does not erase the memory of a slow one."""
         settings = self._settings(time_threshold_seconds=0.01)
 
         class SlowThenFast(SolverAdapter):

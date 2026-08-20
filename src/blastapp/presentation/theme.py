@@ -1,12 +1,12 @@
-"""Paleta kolorów interfejsu: węzły drzewa, zmienne i kontrast tekstu.
+"""Interface colours: tree nodes, variables and text contrast.
 
-Wszystkie wartości hex mieszkają tutaj. Rozsiane po kilku miejscach zaczynają się rozjeżdżać,
-a paleta zmiennych musi obsługiwać dowolną ich liczbę, nie tylko kilka pierwszych.
+Every hex value lives here. Scattered across several places they start to drift, and the variable
+palette has to cover any number of variables, not just the first few.
 """
 
 from blastapp.domain.operators import Operator
 
-# Styl węzła operacji w rysunku drzewa: kolor tła i etykieta.
+# Operation node styling in the tree drawing: fill colour and label.
 OPERATOR_STYLES: dict[Operator, tuple[str, str]] = {
     Operator.AND: ("#A9DFBF", "AND"),
     Operator.OR: ("#F8C471", "OR"),
@@ -27,13 +27,13 @@ NEGATED_VARIABLE_BORDER = "#AA0000"
 DEFAULT_VARIABLE_COLOR = "grey"
 GRAPH_ACCENT = "gold"
 
-# Podświetlenie zmiennej, którą użytkownik nazwał inaczej niż zmienną algebry.
+# Highlight for a variable the user named differently from the algebra variable.
 RENAMED_VARIABLE_STYLE = "background-color: #FFAAAA; color: #000000;"
 STATISTICS_BACKGROUND = "#e5bf00"
 
 
 def variable_color(position: int) -> str:
-    """Kolor zmiennej stojącej na podanej pozycji bitowej."""
+    """Colour of the variable at a given bit position."""
     palette = generate_color_palette()
     return str(palette[position % len(palette)])
 
@@ -43,10 +43,6 @@ def get_contrast_color(hex_color: str) -> str:
     Determines whether black or white text will provide better contrast
     on a given background color.
 
-    :param hex_color: A hex color string (e.g., "#RRGGBB").
-    :type hex_color: str
-    :return: "black" if black text provides better contrast, "white" otherwise.
-    :rtype: str
 
     Example:
         >>> get_contrast_color("#00ff00")
@@ -64,8 +60,6 @@ def generate_color_palette() -> list[str]:
     """
     Generates a color palette consisting of vibrant, lighter, darker, and lighter-darker variations.
 
-    :return: A list of hex color strings in the palette.
-    :rtype: list[str]
 
     Example:
         >>> generate_color_palette()
@@ -93,10 +87,6 @@ def _rgb_of(hex_color: str) -> tuple[int, int, int]:
     """
     Converts a hex color string to an RGB tuple.
 
-    :param hex_color: A hex color string (e.g., "#RRGGBB").
-    :type hex_color: str
-    :return: A tuple representing the RGB color (R, G, B).
-    :rtype: tuple[int, int, int]
 
     Example:
         >>> _rgb_of("#ff5733")
@@ -110,10 +100,6 @@ def _hex_of(rgb_color: tuple[int, int, int]) -> str:
     """
     Converts an RGB tuple to a hex color string.
 
-    :param rgb_color: A tuple representing the RGB color (R, G, B).
-    :type rgb_color: tuple[int, int, int]
-    :return: A hex color string (e.g., "#RRGGBB").
-    :rtype: str
 
     Example:
         >>> _hex_of((255, 87, 51))
@@ -126,12 +112,6 @@ def _lighten_color(hex_color: str, factor: float) -> str:
     """
     Lightens a hex color by blending it with white.
 
-    :param hex_color: The original hex color string (e.g., "#RRGGBB").
-    :type hex_color: str
-    :param factor: A float between 0 and 1 indicating the degree of lightening.
-    :type factor: float
-    :return: The lightened hex color string.
-    :rtype: str
 
     Example:
         >>> _lighten_color("#123456", 0.5)
@@ -148,12 +128,6 @@ def _darken_color(hex_color: str, factor: float) -> str:
     """
     Darkens a hex color by blending it with black.
 
-    :param hex_color: The original hex color string (e.g., "#RRGGBB").
-    :type hex_color: str
-    :param factor: A float between 0 and 1 indicating the degree of darkening.
-    :type factor: float
-    :return: The darkened hex color string.
-    :rtype: str
 
     Example:
         >>> _darken_color("#123456", 0.5)

@@ -1,7 +1,7 @@
-"""Algebra zdaniowa oparta na funkcji OTA.
+"""Propositional algebra over the OTA function.
 
-Operacje logiczne są tu działaniami arytmetycznymi na wektorze współczynników: koniunkcja to
-mnożenie, alternatywa wychodzi z praw de Morgana, a równoważność z kwadratu różnicy.
+Logical operations are arithmetic on the coefficient vector: conjunction is multiplication,
+disjunction follows from De Morgan, equivalence from the squared difference.
 """
 
 from collections.abc import Callable, Sequence
@@ -16,15 +16,9 @@ from blastapp.domain.solving.truth_table import TruthTable
 
 
 class OtaAlgebra(PropositionAlgebra[OtaFunction]):
-    """Reprezentuje zdanie jako funkcję OTA."""
-
     def __init__(self, squares: NSSquares | None = None) -> None:
-        """
-        :param squares: Współdzielony zbiór masek do mnożenia; domyślnie tworzony na miejscu.
-
-        Maski są wstrzykiwane, a nie trzymane przy operandzie: inaczej ich rozmiar zależałby od
-        tego, które mnożenie wykonano jako pierwsze (#14).
-        """
+        """The index-pair sets are injected, not kept on an operand: otherwise their size would
+        depend on which multiplication happened to run first (#14)."""
         self._squares = squares if squares is not None else NSSquares()
 
     def constant(self, value: bool) -> OtaFunction:
@@ -67,16 +61,16 @@ class OtaAlgebra(PropositionAlgebra[OtaFunction]):
         propositions: Sequence[OtaFunction],
         apply: Callable[[OtaFunction, OtaFunction], OtaFunction],
     ) -> OtaFunction:
-        """Łączy zdania parami, zawsze biorąc dwa najkrótsze wektory.
+        """Merge propositions pairwise, always taking the two shortest vectors.
 
-        Krótsze wektory znaczą mniej zmiennych, więc taka kolejność trzyma wyniki pośrednie małe.
+        Shorter vectors mean fewer variables, so this order keeps intermediates small.
 
-        Wybór idzie po POZYCJACH w liście, nie po wartościach: `OtaFunction` nie definiuje
-        `__eq__`, więc filtrowanie przez `not in` byłoby porównaniem tożsamości i usunęłoby oba
-        wystąpienia tego samego obiektu naraz, cicho gubiąc składnik.
+        Selection goes by POSITION in the list, not by value: `OtaFunction` defines no `__eq__`,
+        so filtering with `not in` would compare identity and drop both occurrences of the same
+        object at once, silently losing an operand.
         """
         if len(propositions) < 2:
-            raise ValueError("Operacja wymaga co najmniej dwóch argumentów")
+            raise ValueError("Operation needs at least two operands")
 
         pending = list(propositions)
         while len(pending) > 1:

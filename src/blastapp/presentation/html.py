@@ -1,6 +1,6 @@
-"""Buduje tabelę HTML ze współczynnikami funkcji OTA, przeznaczoną dla Streamlita.
+"""Builds the OTA coefficient table as HTML for Streamlit.
 
-Zwraca tekst — decyzja, gdzie go pokazać, należy do interfejsu (#10).
+Returns text; where to show it is the interface's decision (#10).
 """
 
 import numpy as np
@@ -15,16 +15,6 @@ def ota_coefficients_table(
     """
     Generates an HTML table for bn and tn values.
 
-    :param bn: The bn array.
-    :type bn: np.ndarray
-    :param tn: The tn array.
-    :type tn: np.ndarray
-    :param max_width: Maximum width for table columns.
-    :type max_width: int
-    :param max_columns: Maximum number of columns per row.
-    :type max_columns: int
-    :return: HTML string for the table.
-    :rtype: str
     """
 
     base_styles = {

@@ -1,10 +1,9 @@
-"""Buduje formułę z tekstu.
+"""Builds a formula from text.
 
-Rekurencyjny podział na operatorze o najniższym priorytecie. Tabela operatorów nie dopuszcza
-remisów, więc o korzeniu decyduje wyłącznie siła wiązania, nie pozycja w tekście.
+Recursive split on the lowest-precedence operator. The operator table allows no ties, so the root
+is decided purely by binding strength, never by position in the text.
 
-Parser albo zwraca kompletną formułę, albo rzuca — nie ma stanu pośredniego ani drzewa
-częściowego.
+The parser either returns a complete formula or raises — no partial state, no partial tree.
 """
 
 import re
@@ -26,32 +25,24 @@ VARIABLE_PATTERN = re.compile(r"^[a-zA-Z]\d*$")
 INDEXED_NAME_PATTERN = re.compile(r"a(\d+)")
 CONSTANTS = {"true": True, "false": False}
 
-# Żadne słowo kluczowe nie jest prefiksem innego, więc kolejność przeglądania nie zmienia
-# wyniku; trzymamy kolejność z tabeli dla przewidywalności.
+# No keyword is a prefix of another, so scan order does not change the result; the table order
+# is kept for predictability.
 _KEYWORDS = tuple(spec.keyword for spec in OPERATORS)
 _PRECEDENCE = {spec.keyword: spec.precedence for spec in OPERATORS}
 
 
 def parse_formula(text: str, registry: VariableRegistry | None = None) -> Formula:
-    """
-    Parsuje wyrażenie na formułę.
+    """Parse an expression into a formula, with the digit in `aN` as the bit position.
 
-    :param text: Wyrażenie w zapisie użytkownika.
-    :type text: str
-    :param registry: Sposób przydziału pozycji bitowych; domyślnie `IndexedVariableRegistry`,
-        w którym cyfra w nazwie `aN` jest pozycją bitu.
-    :type registry: VariableRegistry | None
-    :return: Sparsowana formuła.
-    :rtype: Formula
-    :raises ExpressionError: Gdy wyrażenie jest puste, niezbilansowane albo źle zbudowane.
+    :raises ExpressionError: when the expression is empty, unbalanced or malformed.
     """
     check_expression(text)
     normalized = normalize(text)
 
     registry = registry if registry is not None else IndexedVariableRegistry()
     if isinstance(registry, IndexedVariableRegistry):
-        # Rezerwacja musi objąć WSZYSTKIE nazwy `aN`, zanim ruszy parser: inaczej nazwa spoza
-        # tego schematu zajmie pozycję, której później zażąda `aN` o tej samej cyfrze.
+        # Every `aN` name must be reserved BEFORE parsing starts, or a name outside that
+        # scheme takes a position an `aN` with the same digit will later demand.
         for digits in INDEXED_NAME_PATTERN.findall(normalized):
             registry.reserve(f"a{digits}", int(digits))
 
@@ -60,12 +51,12 @@ def parse_formula(text: str, registry: VariableRegistry | None = None) -> Formul
 
 
 def parse_sequential(text: str) -> Formula:
-    """Parsuje, nadając pozycje bitowe w kolejności pierwszego wystąpienia nazwy."""
+    """Parse, assigning bit positions in order of first occurrence."""
     return parse_formula(text, SequentialVariableRegistry())
 
 
 def _build(expression: str, registry: VariableRegistry) -> Node:
-    """Rekurencyjnie buduje poddrzewo dla fragmentu wyrażenia."""
+
     expression = strip_outer_parentheses(expression)
     position, keyword = find_main_operator(expression)
 
@@ -99,10 +90,10 @@ def _build(expression: str, registry: VariableRegistry) -> Node:
 
 
 def _flatten(operator: Operator, operands: tuple[Node, ...]) -> tuple[Node, ...]:
-    """Spłaszcza zagnieżdżone wystąpienia tego samego operatora łącznego.
+    """Flatten nested occurrences of the same associative operator.
 
-    `a & b & c` daje jeden węzeł AND o trzech argumentach zamiast dwóch zagnieżdżonych.
-    Powstaje nowa krotka — żaden węzeł nie zmienia roli ani nie oddaje swoich argumentów.
+    `a & b & c` becomes one AND node with three operands instead of two nested ones. A new tuple
+    is built, so no node changes role or gives away its operands.
     """
     flattened: list[Node] = []
     for operand in operands:
@@ -114,7 +105,7 @@ def _flatten(operator: Operator, operands: tuple[Node, ...]) -> tuple[Node, ...]
 
 
 def _leaf(text: str, registry: VariableRegistry) -> Node:
-    """Zamienia fragment bez operatorów na stałą albo zmienną."""
+    """Turn an operator-free fragment into a constant or a variable."""
     constant = CONSTANTS.get(text.lower())
     if constant is not None:
         return ConstantNode(constant)
@@ -126,7 +117,7 @@ def _leaf(text: str, registry: VariableRegistry) -> Node:
 
 
 def strip_outer_parentheses(expression: str) -> str:
-    """Zdejmuje nawiasy obejmujące całe wyrażenie, o ile domykają się dopiero na końcu."""
+    """Drop parentheses wrapping the whole expression, but only if they close at the very end."""
     expression = expression.strip()
     if not (expression.startswith("(") and expression.endswith(")")):
         return expression
@@ -138,19 +129,13 @@ def strip_outer_parentheses(expression: str) -> str:
         elif expression[position] == ")":
             depth -= 1
         if depth == 0:
-            # Nawiasy zamykają się przed końcem, więc nie obejmują całości: `(a) & (b)`.
+            # The parentheses close before the end, so they do not wrap everything: `(a) & (b)`.
             return expression
     return strip_outer_parentheses(expression[1:-1])
 
 
 def find_main_operator(expression: str) -> tuple[int | None, str | None]:
-    """
-    Znajduje operator, który ma zostać korzeniem poddrzewa.
-
-    :param expression: Fragment wyrażenia w postaci znormalizowanej.
-    :return: Pozycja i słowo kluczowe operatora albo (None, None), gdy fragment go nie zawiera.
-    :rtype: tuple[int | None, str | None]
-    """
+    """Find the operator that becomes the subtree root."""
     candidates: list[tuple[int, int, str]] = []
     depth = 0
     index = 0
@@ -172,6 +157,6 @@ def find_main_operator(expression: str) -> tuple[int | None, str | None]:
     if not candidates:
         return None, None
 
-    # Sortowanie po (priorytet, pozycja): korzeniem zostaje operator wiążący najsłabiej.
+    # Sorted by (precedence, position): the loosest-binding operator becomes the root.
     candidates.sort()
     return candidates[0][1], candidates[0][2]

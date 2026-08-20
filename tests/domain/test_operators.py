@@ -1,7 +1,7 @@
-"""Tabela operatorów: składnia, priorytety i arność.
+"""The operator table: syntax, precedence and arity.
 
-Wartości oczekiwane są wpisane wprost, a nie czytane z kodu produkcyjnego — test odczytujący
-wartość, którą sprawdza, nie sprawdza niczego.
+Expected values are written out rather than read from production code — a test that reads the
+value it checks checks nothing.
 """
 
 from blastapp.domain.operators import (
@@ -17,12 +17,12 @@ from blastapp.domain.operators import (
 
 
 def test_precedence_follows_the_classical_convention() -> None:
-    """Kolejność podręcznikowa: ~ > & > XOR > | > => > <=>."""
+    """Textbook order: ~ > & > XOR > | > => > <=>."""
     assert keywords_by_precedence() == {"EQ": 1, "IMP": 2, "OR": 3, "XOR": 4, "AND": 5, "NOT": 6}
 
 
 def test_every_operator_binds_differently() -> None:
-    """Żadnego remisu: przy równych priorytetach o korzeniu decyduje pozycja w tekście."""
+    """No ties: on equal precedence the root would be decided by position in the text."""
     precedences = list(keywords_by_precedence().values())
     assert len(set(precedences)) == len(precedences)
 
@@ -34,7 +34,7 @@ def test_binary_and_unary_split_is_unchanged() -> None:
 
 
 def test_associative_operators_are_exactly_and_or() -> None:
-    """Tylko AND i OR spłaszczają się do n argumentów; reszta zostaje binarna."""
+    """Only AND and OR flatten to n operands; the rest stay binary."""
     assert set(keywords_with_arity(Arity.ASSOCIATIVE)) == {"AND", "OR"}
 
 
@@ -66,7 +66,7 @@ def test_aliases_cover_the_symbols_the_parser_accepted() -> None:
 
 
 def test_longer_aliases_come_first() -> None:
-    """`=>` jest fragmentem `<=>` i `==>`, więc musi być próbowany jako ostatni z tej trójki."""
+    """`=>` is a fragment of `<=>` and `==>`, so it must be tried last of the three."""
     aliases = [alias for alias, _ in aliases_longest_first()]
     assert aliases.index("<=>") < aliases.index("=>")
     assert aliases.index("==>") < aliases.index("=>")
@@ -75,7 +75,7 @@ def test_longer_aliases_come_first() -> None:
 
 
 def test_specs_are_immutable() -> None:
-    """Tabeli nie da się podmienić w trakcie działania (#22)."""
+    """The table cannot be swapped at runtime (#22)."""
     import dataclasses
 
     import pytest

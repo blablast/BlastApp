@@ -1,8 +1,9 @@
-"""Punkt wejścia aplikacji Streamlit.
+"""Streamlit entry point.
 
-Strażnik `__name__` nie jest tu ozdobą. Limit czasu liczy formułę w osobnym procesie, a `spawn`
-odtwarza go, uruchamiając plik główny rodzica jeszcze raz — pod nazwą `__mp_main__`. Bez tego
-warunku każde rozwiązanie budowałoby całą stronę drugi raz, poza runtime'em Streamlita.
+The `__name__` guard is not decoration. The time limit solves in a separate process, and `spawn`
+recreates that process by running the parent's main file again, under the name `__mp_main__`.
+Without the guard every solve would rebuild the whole page a second time, outside the Streamlit
+runtime.
 """
 
 from blastapp.presentation.web.app import run

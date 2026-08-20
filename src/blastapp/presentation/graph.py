@@ -1,4 +1,4 @@
-"""Rysuje formułę jako graf Graphviz."""
+"""Renders a formula as a Graphviz graph."""
 
 from graphviz import Digraph
 
@@ -19,15 +19,7 @@ from blastapp.presentation.theme import (
 
 
 def build_graph(formula: Formula, title: str | None = None, output_format: str = "png") -> Digraph:
-    """
-    Buduje graf drzewa formuły.
-
-    :param formula: Formuła do narysowania.
-    :param title: Podpis pod rysunkiem; domyślnie zapis symboliczny formuły.
-    :param output_format: Format renderowania Graphviza.
-    :return: Graf gotowy do zapisania lub wyświetlenia.
-    :rtype: Digraph
-    """
+    """Build the formula tree as a graph."""
     graph = Digraph(comment="Logic Tree", format=output_format)
     graph.attr(bgcolor="transparent")
     graph.attr("node", shape="ellipse", style="filled", fontname="Helvetica-Bold")
@@ -50,11 +42,11 @@ def build_graph(formula: Formula, title: str | None = None, output_format: str =
 def _add_node(
     graph: Digraph, node: Node, parent: Node | None, parent_id: str | None, path: str
 ) -> None:
-    """Dodaje węzeł i krawędź do rodzica.
+    """Add a node and the edge to its parent.
 
-    Identyfikator bierze się ze ŚCIEŻKI w drzewie, nie z `id()`: niemutowalne węzły o tej samej
-    treści są jednym obiektem, więc tożsamość skleiłaby dwa wystąpienia tej samej podformuły
-    w jeden węzeł rysunku.
+    The id comes from the PATH in the tree, not from `id()`: immutable nodes with equal content
+    are the same object, so identity would merge two occurrences of one subformula into a single
+    drawn node.
     """
     _declare(graph, node, path)
 
@@ -67,7 +59,7 @@ def _add_node(
 
 
 def _declare(graph: Digraph, node: Node, node_id: str) -> None:
-    """Deklaruje węzeł z wyglądem odpowiednim dla jego rodzaju."""
+    """Declare a node styled for its kind."""
     match node:
         case VariableNode(index=index, name=name, negated=negated):
             color = variable_color(index) or DEFAULT_VARIABLE_COLOR
@@ -98,7 +90,7 @@ def _declare(graph: Digraph, node: Node, node_id: str) -> None:
 def _add_edge(
     graph: Digraph, parent: Node | None, parent_id: str, node_id: str, is_first_operand: bool
 ) -> None:
-    """Łączy węzeł z rodzicem; implikacja dostaje podpisane krawędzie."""
+    """Link a node to its parent; implication gets labelled edges."""
     if isinstance(parent, OperationNode) and parent.operator is Operator.IMP:
         if is_first_operand:
             graph.edge(parent_id, node_id, dir="back", label="if", fontcolor=GRAPH_ACCENT)

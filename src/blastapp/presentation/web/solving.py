@@ -1,13 +1,13 @@
-"""Uruchamia silnik z limitem czasu, który faktycznie przerywa liczenie.
+"""Runs an engine under a time limit that genuinely interrupts the work.
 
-Liczenie idzie do osobnego PROCESU, bo wątku zajętego procesorem w Pythonie nie da się przerwać —
-limit oparty na wątkach jest obietnicą bez pokrycia.
+Solving goes to a separate PROCESS, because a CPU-bound Python thread cannot be interrupted — a
+thread-based limit is a promise without cover.
 
-`ProcessPoolExecutor` dostał publiczne `terminate_workers()` dopiero w Pythonie 3.14, więc na
-3.13 używamy `multiprocessing` wprost: `Process.terminate()` jest tam częścią publicznego API.
+`ProcessPoolExecutor` only got a public `terminate_workers()` in Python 3.14, so on 3.13 this uses
+`multiprocessing` directly, where `Process.terminate()` is public API.
 
-Wszystko, co przechodzi przez granicę procesu, jest niemutowalne i picklowalne: `Formula`
-w jedną stronę, `SolverResult` w drugą.
+Everything crossing the process boundary is immutable and picklable: `Formula` out, `SolverResult`
+back.
 """
 
 import multiprocessing
@@ -21,7 +21,7 @@ from blastapp.domain.solving.solver import LogicSolver
 
 
 class SolverTimeoutError(Exception):
-    """Silnik nie skończył w wyznaczonym czasie i został przerwany."""
+    """The engine did not finish in time and was killed."""
 
     def __init__(self, seconds: float) -> None:
         super().__init__(f"Solver przekroczył {seconds} s i został przerwany.")
@@ -30,7 +30,7 @@ class SolverTimeoutError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class SolveRequest:
-    """Co ma policzyć proces roboczy."""
+    """What the worker process should solve."""
 
     engine_key: str
     formula: Formula
@@ -38,29 +38,24 @@ class SolveRequest:
 
 
 def _worker(queue: "multiprocessing.Queue[object]", request: SolveRequest) -> None:
-    """Funkcja procesu roboczego.
+    """The worker entry point.
 
-    Musi być modułowa: macOS uruchamia procesy przez `spawn`, więc potomek re-importuje moduł
-    i odtwarza cel po nazwie — metoda ani domknięcie nie przetrwałyby tej drogi.
+    It has to be module level: macOS starts processes with `spawn`, so the child re-imports the
+    module and looks the target up by name — a method or a closure would not survive the trip.
     """
     try:
         solver = LogicSolver(
             engine_by_key(request.engine_key), with_ota_function=request.with_ota_function
         )
         queue.put(solver.solve(request.formula))
-    except BaseException as error:  # noqa: BLE001 - błąd ma dojechać do rodzica, nie zniknąć
+    except BaseException as error:  # noqa: BLE001 - the error must reach the parent, not vanish
         queue.put(error)
 
 
 def solve_with_timeout(request: SolveRequest, timeout_seconds: float) -> SolverResult:
-    """
-    Liczy formułę w osobnym procesie i przerywa go po przekroczeniu czasu.
+    """Solve in a separate process, killing it once the limit passes.
 
-    :param request: Co policzyć.
-    :param timeout_seconds: Limit czasu w sekundach.
-    :return: Wynik silnika.
-    :rtype: SolverResult
-    :raises SolverTimeoutError: Gdy proces nie skończył na czas; jest wtedy zabijany.
+    :raises SolverTimeoutError: when the process did not finish in time.
     """
     context = multiprocessing.get_context("spawn")
     queue: multiprocessing.Queue[object] = context.Queue()
@@ -68,9 +63,9 @@ def solve_with_timeout(request: SolveRequest, timeout_seconds: float) -> SolverR
 
     process.start()
     try:
-        # Odczyt MUSI poprzedzać `join`. Potomek oddaje wynik przez potok o skończonym buforze
-        # i nie zakończy się, dopóki rodzic go nie opróżni — `join` przed odczytem czekałby więc
-        # pełny limit czasu przy każdym większym wyniku i uznał go za przekroczony.
+        # The read MUST come before `join`. The child hands the result over a pipe with a finite
+        # buffer and cannot exit until the parent drains it, so `join` first would wait the full
+        # timeout on any larger result and report it as exceeded.
         try:
             outcome = queue.get(timeout=timeout_seconds)
         except Empty:
@@ -79,7 +74,7 @@ def solve_with_timeout(request: SolveRequest, timeout_seconds: float) -> SolverR
         if isinstance(outcome, BaseException):
             raise outcome
         if not isinstance(outcome, SolverResult):
-            raise RuntimeError(f"Proces zwrócił {type(outcome).__name__}, nie SolverResult")
+            raise RuntimeError(f"The worker returned {type(outcome).__name__}, not a SolverResult")
         return outcome
     finally:
         if process.is_alive():

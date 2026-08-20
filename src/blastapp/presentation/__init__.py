@@ -1,1 +1,4 @@
-"""Warstwa prezentacji: CLI, GUI i renderowanie wyników. Zależy od dziedziny, nigdy odwrotnie."""
+"""Presentation layer: CLI, GUI and result rendering.
+
+Depends on the domain, never the other way round.
+"""

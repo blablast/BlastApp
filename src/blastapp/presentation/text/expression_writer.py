@@ -1,7 +1,7 @@
-"""Zapisuje formułę z powrotem w postaci symbolicznej.
+"""Writes a formula back in symbolic form.
 
-Renderuje z DRZEWA, a symbole bierze z tej samej tabeli operatorów co zapis wejściowy — więc
-zapis wyjściowy nie może rozjechać się z akceptowanym wejściem (#19).
+Rendered from the TREE, with symbols from the same operator table the input uses, so the output
+notation cannot drift from the accepted input (#19).
 """
 
 from blastapp.domain.expressions.formula import Formula
@@ -12,7 +12,7 @@ NOT_SYMBOL = spec_of(Operator.NOT).symbol
 
 
 def write_formula(formula: Formula) -> str:
-    """Zapis symboliczny całej formuły, z nazwami zmiennych podanymi przez użytkownika."""
+    """The whole formula in symbols, using the names the user supplied."""
     return write_expression(formula.root)
 
 
@@ -20,9 +20,6 @@ def write_expression(node: Node) -> str:
     """
     Zapis symboliczny poddrzewa.
 
-    :param node: Węzeł do zapisania.
-    :return: Zapis symboliczny.
-    :rtype: str
     """
     match node:
         case VariableNode(name=name, negated=negated):
@@ -35,10 +32,10 @@ def write_expression(node: Node) -> str:
             if spec.arity is Arity.UNARY:
                 return f"{spec.symbol}{parts[0]}"
             return f" {spec.symbol} ".join(parts)
-    raise TypeError(f"Nie umiem zapisać węzła: {type(node).__name__}")
+    raise TypeError(f"Cannot write node: {type(node).__name__}")
 
 
 def _wrapped(node: Node) -> str:
-    """Nawiasuje poddrzewo operacji; liście nawiasów nie potrzebują."""
+    """Parenthesise an operation subtree; leaves need none."""
     text = write_expression(node)
     return f"({text})" if isinstance(node, OperationNode) else text

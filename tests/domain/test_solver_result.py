@@ -1,4 +1,4 @@
-"""Oba silniki zwracają ten sam typ wyniku, więc nikt nie pyta, który pracował."""
+"""Both engines return the same result type, so nobody asks which one ran."""
 
 import pytest
 
@@ -40,7 +40,7 @@ class TestEngineRegistry:
             engine_by_key("pyeda")
 
     def test_variable_limit_is_a_property_of_the_engine(self) -> None:
-        """Limit jest własnością silnika, a nie warunkiem wpisanym w miejscu użycia."""
+        """The limit is a property of the engine, not a condition at the call site."""
         assert OTA_ENGINE.accepts(10) and not OTA_ENGINE.accepts(11)
         assert BLAST_ENGINE.accepts(25)
 
@@ -70,8 +70,8 @@ class TestBothEnginesAgree:
 
 class TestResultInvariants:
     def test_table_width_must_match_the_variable_map(self) -> None:
-        """Rozjazd tych dwóch oznaczałby kolumny nie na swoich miejscach."""
-        with pytest.raises(ValueError, match="mapa zmiennych"):
+        """A mismatch between the two would put columns in the wrong places."""
+        with pytest.raises(ValueError, match="variable map"):
             SolverResult(
                 engine=OTA_ENGINE,
                 truth_table=TruthTable(3, 0),
@@ -80,7 +80,7 @@ class TestResultInvariants:
             )
 
     def test_negative_duration_is_refused(self) -> None:
-        with pytest.raises(ValueError, match="ujemny"):
+        with pytest.raises(ValueError, match="negative"):
             SolverResult(
                 engine=OTA_ENGINE,
                 truth_table=TruthTable(1, 0),

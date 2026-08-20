@@ -1,7 +1,7 @@
-"""Adaptery silników tej aplikacji.
+"""Adapters for this application's engines.
 
-Funkcja OTA jest wyłączona: benchmark mierzy rozwiązywanie, a jej wyliczenie kosztuje dla silnika
-bitowego wielokrotnie więcej i zaburzyłoby pomiar.
+The OTA function is switched off: the benchmark measures solving, and for the bitwise engine
+building it costs far more than the solve itself and would distort the measurement.
 """
 
 from collections.abc import Sequence
@@ -13,7 +13,7 @@ from blastapp.domain.solving.solver import LogicSolver
 
 
 class BlastAppAdapter(SolverAdapter):
-    """Liczy rozwiązania jednym z silników tej aplikacji."""
+    """Counts solutions with one of this application's engines."""
 
     def __init__(self, engine: SolverEngine) -> None:
         self.name = engine.display_name

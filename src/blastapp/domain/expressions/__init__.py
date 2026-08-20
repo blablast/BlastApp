@@ -1,1 +1,1 @@
-"""Wyrażenia logiczne: składnia, walidacja, parsowanie i drzewo składniowe."""
+"""Propositional expressions: syntax, validation, parsing and the syntax tree."""

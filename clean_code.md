@@ -28,7 +28,13 @@ def calculate_total_price(quantity, unit_price):
 
 Komentarz to najczęściej sygnał, że kod nie jest wystarczająco czytelny. Zamiast komentować - zmień nazwę, wydziel funkcję lub uprość warunek. Komentarze się dezaktualizują (kod się zmienia, komentarz zostaje), a nieaktualny komentarz jest gorszy niż jego brak. Wyjątki: komentarze prawne, wyjaśnienie intencji przy workaroundzie, ostrzeżenia o konsekwencjach, TODO z numerem taska.
 
-Komentarze i docstringi piszemy po polsku, z pełnymi ogonkami (identyfikatory kodu zostają po angielsku). Wyjaśniają *dlaczego*, nie *co* - intencję, decyzję projektową, kompromis albo nieoczywiste ograniczenie; kod pokazuje, co robi. Bez narracji historycznej (changelogi, daty, "kiedyś zwracało nic", "backward compatible") - historię trzyma git, a powód opisujemy w czasie teraźniejszym. Bez odwołań do ticketów, commitów, nazwisk czy numerów linii - komentarz ma być samowystarczalny.
+Komentarze i docstringi piszemy **po angielsku** i **skąpo**. Domyślną odpowiedzią na "tu przydałby się komentarz" jest lepsza nazwa albo wydzielona funkcja, nie zdanie obok. Komentarz zostaje tylko wtedy, gdy niesie *dlaczego*: decyzję projektową, kompromis, pomiar albo nieoczywiste ograniczenie. Nigdy *co* - to pokazuje kod.
+
+Docstring jest opcjonalny. Piszemy go, gdy sama sygnatura nie wystarcza, i wtedy jest to jedno zdanie. Bez pól `:param:`, `:type:`, `:return:`, `:rtype:` - typy stoją w sygnaturze i pilnuje ich `mypy --strict`, więc powtarzanie ich w prozie tylko się dezaktualizuje. `:raises:` zostaje, jeśli wyjątek jest częścią kontraktu i nie widać go z sygnatury.
+
+Bez liczb z benchmarków. Czasy i mnożniki zależą od maszyny, danych i wersji bibliotek - nikt ich nie odtworzy, a zestarzeją się po cichu. Piszemy, *dlaczego* wybraliśmy dane rozwiązanie, nie ile wyszło w pomiarze. Liczby wynikające z samej reprezentacji (`2^25` bitów to około 4 MB) są w porządku - to arytmetyka, nie pomiar.
+
+Bez narracji historycznej (changelogi, daty, "kiedyś zwracało nic", "backward compatible") - historię trzyma git, a powód opisujemy w czasie teraźniejszym. Bez odwołań do ticketów, commitów, nazwisk czy numerów linii - komentarz ma być samowystarczalny.
 
 ```python
 # ŹLE - komentarz tłumaczy nieczytelny warunek

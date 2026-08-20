@@ -1,4 +1,4 @@
-"""Jeden mechanizm błędów: parser albo zwraca poprawną formułę, albo rzuca (#25)."""
+"""One error mechanism: the parser returns a valid formula or raises (#25)."""
 
 import pytest
 
@@ -34,25 +34,25 @@ def test_each_failure_has_its_own_type(expression: str, expected: type[Expressio
 
 @pytest.mark.parametrize("expression", ["(a0 & a1", "a0 & @ a1", "a0 &", ""])
 def test_one_except_clause_catches_everything(expression: str) -> None:
-    """Wywołujący, którego nie obchodzi rodzaj błędu, łapie jeden typ bazowy."""
+    """A caller who does not care about the kind of error catches one base type."""
     with pytest.raises(ExpressionError):
         parse_sequential(expression)
 
 
 def test_error_carries_the_offending_expression() -> None:
-    """Prezentacja ma zbudować własny komunikat, więc dostaje dane, nie tylko tekst."""
+    """Presentation builds its own message, so it gets data rather than just text."""
     with pytest.raises(UnbalancedParenthesesError) as caught:
         parse_sequential("(a0 & a1")
     assert caught.value.expression == "(a0 & a1"
 
 
 def test_no_expression_at_all_is_an_error_not_an_empty_result() -> None:
-    """Parser nie ma stanu pośredniego: albo zwraca formułę, albo rzuca."""
+    """The parser has no partial state: it returns a formula or raises."""
     with pytest.raises(EmptyExpressionError):
         parse_formula("")
 
 
 def test_failed_parse_leaves_no_partial_tree() -> None:
-    """Nieudane parsowanie nie zostawia formuły częściowej."""
+    """A failed parse leaves no partial formula."""
     with pytest.raises(ExpressionError):
         parse_sequential("a0 & (a1 | ")

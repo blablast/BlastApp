@@ -1,4 +1,4 @@
-"""Parametry prezentacji w jednym miejscu, zamiast literałów rozsianych po widokach (#03)."""
+"""Presentation parameters in one place, rather than literals scattered across views (#03)."""
 
 from dataclasses import dataclass
 

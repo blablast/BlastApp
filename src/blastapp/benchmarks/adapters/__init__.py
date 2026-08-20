@@ -1,1 +1,1 @@
-"""Adaptery poszczególnych solverów."""
+"""One adapter per solver."""

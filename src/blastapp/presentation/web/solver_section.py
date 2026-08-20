@@ -1,6 +1,6 @@
-"""Sekcja wyniku jednego silnika.
+"""One engine's result section.
 
-Nie pyta, który silnik pracował — `SolverResult` niesie wszystko, czego potrzebuje interfejs.
+It never asks which engine ran: `SolverResult` carries everything the interface needs.
 """
 
 import streamlit as st
@@ -16,7 +16,7 @@ from blastapp.presentation.web.ota_section import render_ota_details
 def render_solver_section(
     result: SolverResult, texts: dict[str, str], ota_container: DeltaGenerator | None = None
 ) -> None:
-    """Rysuje czas, statystyki i tabele wyników jednego silnika."""
+    """Draw timing, statistics and result tables for one engine."""
     st.write(
         f"{result.engine.display_name} {texts['solved_in']} {result.duration_seconds * 1000:.4f} ms"
     )
@@ -39,7 +39,7 @@ def render_solver_section(
 
 
 def render_result_tables(result: SolverResult, texts: dict[str, str]) -> None:
-    """Rysuje wartościowania prawdziwe i fałszywe obok siebie."""
+    """Draw the true and false assignments side by side."""
     result_column = texts["column_result"]
     frame = results_frame(result, result_column)
     true_column, false_column = st.columns(2)
@@ -53,7 +53,7 @@ def render_result_tables(result: SolverResult, texts: dict[str, str]) -> None:
 
 
 def statistics_banner(statistics: SolutionStatistics, texts: dict[str, str]) -> str:
-    """Składa pasek ze statystykami rozwiązania."""
+    """Build the statistics banner."""
     return f"""
     <div style="background-color: {STATISTICS_BACKGROUND}; color: black; font-size: 1.2em;
                 border-radius: 10px; text-align: center; padding: 10px;">

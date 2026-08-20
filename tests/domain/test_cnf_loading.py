@@ -1,4 +1,4 @@
-"""`formula_from_clauses` buduje formułę wprost z klauzul, bez pośrednictwa tekstu."""
+"""`formula_from_clauses` builds a formula straight from clauses, with no text in between."""
 
 import pytest
 
@@ -11,7 +11,7 @@ from tests.reference_evaluator import truth_values
 
 
 def test_literal_sign_becomes_negation() -> None:
-    """Literał DIMACS n odpowiada zmiennej a(n-1); znak minus to negacja."""
+    """DIMACS literal n is variable a(n-1); a minus sign negates it."""
     assert write_formula(formula_from_clauses([[1, -2]])) == "a0 | ~a1"
 
 
@@ -20,7 +20,7 @@ def test_clauses_are_joined_with_conjunction() -> None:
 
 
 def test_single_literal_clause_is_not_wrapped() -> None:
-    """Alternatywa jednego składnika byłaby zbędną warstwą w drzewie."""
+    """A one-operand disjunction would be a pointless layer in the tree."""
     assert write_formula(formula_from_clauses([[1]])) == "a0"
     assert write_formula(formula_from_clauses([[1], [2]])) == "a0 & a1"
 
@@ -33,7 +33,7 @@ def test_bit_positions_come_from_the_literal_numbers() -> None:
 
 
 def test_result_matches_the_equivalent_text_formula() -> None:
-    """Formuła z klauzul ma znaczyć dokładnie to, co ten sam zapis tekstowy."""
+    """A formula from clauses must mean exactly what the same text means."""
     from_clauses = formula_from_clauses([[1, -2], [2, 3]])
     from_text = parse_formula("(a0 | ~a1) & (a1 | a2)")
     assert truth_values(from_clauses) == truth_values(from_text)
@@ -49,6 +49,6 @@ def test_operators_are_the_ones_the_evaluator_dispatches_on() -> None:
 
 @pytest.mark.parametrize("bad", [[], [[]]])
 def test_empty_input_is_refused(bad: list[list[int]]) -> None:
-    """Puste wejście jest błędem, a nie powodem do zwrócenia pustej formuły."""
+    """Empty input is an error, not a reason to return an empty formula."""
     with pytest.raises(ValueError):
         formula_from_clauses(bad)

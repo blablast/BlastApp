@@ -1,4 +1,4 @@
-"""Składnia i priorytety: co dokładnie wychodzi z parsera dla danego zapisu."""
+"""Syntax and precedence: exactly what the parser produces for a given notation."""
 
 import pytest
 
@@ -9,7 +9,7 @@ from blastapp.domain.expressions.parsing import parse_sequential
 
 
 def shape(node: Node) -> str:
-    """Zwraca kształt drzewa jako tekst, np. `Or(a0, Imp(a1, a2))`."""
+    """The tree shape as text, e.g. `Or(a0, Imp(a1, a2))`."""
     match node:
         case VariableNode(name=name, negated=negated):
             return f"{'~' if negated else ''}{name}"
@@ -22,7 +22,7 @@ def shape(node: Node) -> str:
 
 
 def parse(expression: str) -> Formula:
-    """Parser rzuca przy błędzie, więc brak wyjątku sam w sobie jest asercją."""
+    """The parser raises on error, so the absence of an exception is itself an assertion."""
     return parse_sequential(expression)
 
 
@@ -61,12 +61,13 @@ def test_symbol_normalization(expression: str, expected: str) -> None:
     ],
 )
 def test_precedence_that_stays(expression: str, expected: str) -> None:
-    """Priorytety, co do których wszystkie konwencje są zgodne."""
+    """Precedences every convention agrees on."""
     assert shape(parse(expression).root) == expected
 
 
 def test_implication_is_right_associative() -> None:
-    """Implikacja wiąże w prawo — jako jedyna niełączna, jest jedyną, dla której to widać."""
+    """Implication binds right; being the only non-associative operator, it is the only
+    place where the direction is visible."""
     assert shape(parse("a0 => a1 => a2").root) == "Imp(a0, Imp(a1, a2))"
 
 
@@ -83,7 +84,7 @@ def test_implication_is_right_associative() -> None:
     ],
 )
 def test_classical_precedence(expression: str, expected: str) -> None:
-    """Kolejność podręcznikowa: ~ > & > XOR > | > => > <=>."""
+    """Textbook order: ~ > & > XOR > | > => > <=>."""
     assert shape(parse(expression).root) == expected
 
 
@@ -92,7 +93,7 @@ def test_classical_precedence(expression: str, expected: str) -> None:
     ["(a0 & a1", "a0 & a1)", "a0 & & a1", "a0 & @ a1"],
 )
 def test_broken_expressions_raise(expression: str) -> None:
-    """Błędne wyrażenie kończy się wyjątkiem domenowym, nigdy formułą częściową."""
+    """A broken expression ends in a domain exception, never a partial formula."""
     with pytest.raises(ExpressionError):
         parse_sequential(expression)
 
@@ -108,8 +109,8 @@ def test_broken_expressions_raise(expression: str) -> None:
     ],
 )
 def test_negation_is_pulled_down_to_the_leaves(expression: str, expected: str) -> None:
-    """Negacja schodzi do liści tak samo na korzeniu, jak wewnątrz drzewa.
+    """Negation reaches the leaves at the root as well as inside the tree.
 
-    Podwójna negacja NIE jest upraszczana: `~~a0` zostaje jako NOT nad zmienną zanegowaną.
+    Double negation is NOT simplified: `~~a0` stays as NOT over a negated variable.
     """
     assert shape(parse(expression).root) == expected

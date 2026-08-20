@@ -1,7 +1,7 @@
-"""Dokładny tekst po normalizacji symboli.
+"""The exact text after symbol normalization.
 
-Czerwony wynik tutaj znaczy, że zmienił się akceptowany zapis wejściowy — a to musi być decyzja,
-nie efekt uboczny zmiany w tabeli operatorów.
+Red here means the accepted input notation changed — which has to be a decision, not a side effect
+of editing the operator table.
 """
 
 import pytest
@@ -56,5 +56,5 @@ def test_normalization_is_unchanged(raw: str, normalized: str) -> None:
     ],
 )
 def test_expression_is_written_back_from_the_tree(raw: str, symbolic: str) -> None:
-    """Zapis wyjściowy powstaje z DRZEWA, więc nie może rozjechać się z zapisem wejściowym."""
+    """Output notation comes from the TREE, so it cannot drift from the input notation."""
     assert write_formula(parse_formula(raw)) == symbolic
