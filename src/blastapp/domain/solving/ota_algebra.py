@@ -40,19 +40,24 @@ class OtaAlgebra(PropositionAlgebra[OtaFunction]):
         return proposition.negated()
 
     def conjunction(self, propositions: Sequence[OtaFunction]) -> OtaFunction:
-        return self._combine(propositions, lambda left, right: left * right)
+        return self._combine(
+            propositions, lambda left, right: left.multiplied_by(right, self._squares)
+        )
 
     def disjunction(self, propositions: Sequence[OtaFunction]) -> OtaFunction:
         return self._combine(
             propositions,
-            lambda left, right: (left.negated() * right.negated()).negated(),
+            lambda left, right: (
+                left.negated().multiplied_by(right.negated(), self._squares).negated()
+            ),
         )
 
     def equivalence(self, left: OtaFunction, right: OtaFunction) -> OtaFunction:
-        return ((left - right) ** 2).negated()
+        difference = left - right
+        return difference.multiplied_by(difference, self._squares).negated()
 
     def implication(self, antecedent: OtaFunction, consequent: OtaFunction) -> OtaFunction:
-        return (antecedent * consequent.negated()).negated()
+        return antecedent.multiplied_by(consequent.negated(), self._squares).negated()
 
     def to_truth_table(self, proposition: OtaFunction) -> TruthTable:
         return TruthTable.from_values([bool(value) for value in proposition.bn])
