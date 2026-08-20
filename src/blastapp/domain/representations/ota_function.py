@@ -27,7 +27,6 @@ class OtaFunction:
         tn (np.ndarray): Array storing tn coefficients, initialized as None.
         bn (np.ndarray): Array storing bn coefficients, initialized as None.
         c (np.ndarray): Array storing intermediate delta values, initialized as None.
-        squares_ns (NSSquares): Precomputed sparse masks for multiplication, initialized as None.
         variables_count (int): Number of variables in the function, initialized as 0.
     """
 
@@ -38,15 +37,40 @@ class OtaFunction:
         # Puste tablice zamiast None: obiekt nigdy nie jest w stanie na wpół zbudowanym,
         # więc każda metoda może na nich pracować bez sprawdzania, czy już istnieją.
         self.tn: np.ndarray = np.zeros(0, dtype=np.int64)
-        self.bn: np.ndarray = np.zeros(0, dtype=np.int64)
-        self.c: np.ndarray = np.zeros(0, dtype=np.int64)
-        self.squares_ns: NSSquares | None = None
+        # `bn` i `c` są liczone dopiero przy odczycie: czyta je wyłącznie `to_truth_table`
+        # na końcu i warstwa prezentacji, a każdy wynik pośredni powstaje przez `from_tn`.
+        self._bn: np.ndarray | None = np.zeros(0, dtype=np.int64)
+        self._c: np.ndarray | None = np.zeros(0, dtype=np.int64)
         self.variables_count = 0
         # Współczynniki podwajają się co poziom XOR, więc int8 wystarcza tylko do pięciu
         # zmiennych — numpy 2.x zgłasza wtedy przepełnienie zamiast zawijać wartość.
         self.tn_type = np.int64
         self.bn_type = np.int64
         self.c_type = np.int64
+
+    @property
+    def bn(self) -> np.ndarray:
+        """Wektor wartości; liczony z `tn` przy pierwszym odczycie."""
+        if self._bn is None:
+            self.recalculate_bn()
+        assert self._bn is not None
+        return self._bn
+
+    @bn.setter
+    def bn(self, value: np.ndarray) -> None:
+        self._bn = value
+
+    @property
+    def c(self) -> np.ndarray:
+        """Przyrosty `bn`; liczone razem z nim."""
+        if self._c is None:
+            self.recalculate_bn()
+        assert self._c is not None
+        return self._c
+
+    @c.setter
+    def c(self, value: np.ndarray) -> None:
+        self._c = value
 
     ### Factory Methods ###
     @classmethod
@@ -67,16 +91,20 @@ class OtaFunction:
     @classmethod
     def from_tn(cls, tn: np.ndarray) -> "OtaFunction":
         """
-        Creates an OtaFunction instance from a tn sequence.
+        Tworzy funkcję z wektora współczynników.
 
-        :param tn: Input tn sequence as a NumPy array.
+        :param tn: Wektor współczynników.
         :type tn: np.ndarray
-        :return: Initialized instance with bn and tn sequence.
+        :return: Funkcja o podanych współczynnikach; `bn` policzy się przy pierwszym odczycie.
         :rtype: OtaFunction
         """
         instance = cls()
-        instance.tn = tn
-        instance.recalculate_bn()
+        instance._initialize(tn, is_bn=False)
+        # Unieważnienie zaraz po `_initialize`: `bn` i `c` są tam tylko zerowane pod rekurencję,
+        # a ta rekurencja jest najdroższą częścią mnożenia i dla wyników pośrednich zbędna.
+        instance._bn = None
+        instance._c = None
+        instance._truncate_to_power_of_two()
         return instance
 
     ### Initialization ###
@@ -275,22 +303,25 @@ class OtaFunction:
         result._truncate_to_power_of_two()
         return result
 
-    def __mul__(self, other: "OtaFunction") -> "OtaFunction":
+    def multiplied_by(self, other: "OtaFunction", squares: NSSquares) -> "OtaFunction":
         """
-        Multiplies two OtaFunction objects.
+        Mnoży dwie funkcje OTA, korzystając z podanego zbioru masek.
 
-        :param other: The other OtaFunction to multiply.
+        Pary przychodzą z zewnątrz, bo każde mnożenie zwraca NOWĄ funkcję: trzymane przy
+        operandzie musiałyby powstawać od nowa dla każdego wyniku pośredniego, a ich budowa
+        kosztuje więcej niż samo mnożenie.
+
+        :param other: Druga funkcja.
         :type other: OtaFunction
-        :return: A new OtaFunction representing the product.
+        :param squares: Współdzielony zbiór par indeksów `i | j == k`.
+        :type squares: NSSquares
+        :return: Iloczyn jako nowa funkcja OTA.
         :rtype: OtaFunction
         """
         padded_self, padded_other = self._pad_arrays(other)
-
-        if self.squares_ns is None:
-            self.squares_ns = NSSquares(np.log2(len(padded_self)).astype(int))
         multiplied = np.outer(padded_self, padded_other)
         result_tn = np.array(
-            [multiplied[self.squares_ns[i].nonzero()].sum() for i in range(len(padded_self))],
+            [multiplied[squares[i]].sum() for i in range(len(padded_self))],
             dtype=self.tn.dtype,
         )
 
@@ -298,40 +329,13 @@ class OtaFunction:
         result._truncate_to_power_of_two()
         return result
 
-    def __pow__(self, power: int, modulo: None = None) -> "OtaFunction":
-        """
-        Raises the OtaFunction to a power.
-
-        :param power: The power to raise the OtaFunction to.
-        :type power: int
-        :param modulo: The modulo value for the operation.
-        :type modulo: int, optional
-        :return: A new OtaFunction representing the result of the operation.
-        :rtype: OtaFunction
-        """
-
-        if modulo is not None or not isinstance(power, int) or power < 0:
-            raise ValueError("Unsupported operation.")
-
-        if power == 0:
-            return OtaFunction().from_tn(np.array([1], dtype=self.tn.dtype))
-        if power == 1:
-            # Kopia, nie `self`: inaczej wynik potęgowania byłby tym samym obiektem co argument.
-            return OtaFunction().from_tn(self.tn.copy())
-
-        result = self
-        for _ in range(power - 1):
-            result *= self
-            if modulo is not None:
-                result %= modulo
-
-        return result
-
     def __len__(self) -> int:
         """
-        Returns the length of the OtaFunction.
+        Długość wektora współczynników, czyli 2^n — liczba wartościowań, a NIE liczba zmiennych.
 
-        :return: The length of the tn array.
+        Rozróżnienie jest tu istotne, bo obok stoi `variables_count`.
+
+        :return: Liczba współczynników.
         :rtype: int
         """
         return int(self.tn.size)
@@ -369,10 +373,11 @@ class OtaFunction:
         self.tn = self.tn[:new_length]
 
         # Adjust bn and c arrays to match the new length if they exist
-        if self.bn is not None:
-            self.bn = self.bn[:new_length]
-        if self.c is not None:
-            self.c = self.c[:new_length]
+        # Prywatne pola, nie właściwości: odczyt `self.bn` policzyłby to, co właśnie odkładamy.
+        if self._bn is not None:
+            self._bn = self._bn[:new_length]
+        if self._c is not None:
+            self._c = self._c[:new_length]
 
         self.variables_count = int(np.log2(len(self.tn)))
 
