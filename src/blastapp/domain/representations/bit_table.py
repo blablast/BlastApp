@@ -25,8 +25,11 @@ Warunki, na jakich mutacja tu obowiązuje:
 """
 
 from bisect import bisect_right
+from typing import assert_never
 
 import numpy as np
+
+from blastapp.domain.operators import Operator
 
 
 def _duplication_table(group_bits: int) -> np.ndarray:
@@ -156,29 +159,37 @@ class BitTable:
             negated &= self._tail_mask()
         return negated
 
-    def apply_in_place(self, operation: str, other: "BitTable") -> None:
+    def apply_in_place(self, operation: Operator, other: "BitTable") -> None:
         """
-        Wykonuje operację logiczną, zapisując wynik w tej tablicy.
+        Wykonuje operację dwuargumentową, zapisując wynik w tej tablicy.
 
-        :param operation: Nazwa operacji: AND, OR, IMP albo EQ.
-        :type operation: str
+        Dopasowanie jest wyczerpujące wobec `Operator`, więc dopisanie tam nowego operatora
+        zatrzyma sprawdzanie typów właśnie tutaj — a nie dopiero na wyjątku w czasie działania.
+        `NOT` jest jednoargumentowy i ma `negate_in_place`, a `XOR` evaluator rozkłada na
+        negację równoważności; oba są tu błędem wołającego.
+
+        :param operation: Operacja do wykonania.
+        :type operation: Operator
         :param other: Druga tablica; po wywołaniu jest ZUŻYTA, bo `align_with` ją rozszerza.
         :type other: BitTable
         :return: None
-        :raises ValueError: Gdy nazwa operacji jest nieznana.
+        :raises ValueError: Gdy operator nie jest dwuargumentowy w tej algebrze.
         """
         normalized_other = self.align_with(other)
 
-        if operation == "AND":
-            self.words = np.bitwise_and(self.words, normalized_other.words)
-        elif operation == "OR":
-            self.words = np.bitwise_or(self.words, normalized_other.words)
-        elif operation == "IMP":
-            self.words = np.bitwise_or(self._negated_words(), normalized_other.words)
-        elif operation == "EQ":
-            self.words = self._negated(np.bitwise_xor(self.words, normalized_other.words))
-        else:
-            raise ValueError(f"Unknown operation: {operation}")
+        match operation:
+            case Operator.AND:
+                self.words = np.bitwise_and(self.words, normalized_other.words)
+            case Operator.OR:
+                self.words = np.bitwise_or(self.words, normalized_other.words)
+            case Operator.IMP:
+                self.words = np.bitwise_or(self._negated_words(), normalized_other.words)
+            case Operator.EQ:
+                self.words = self._negated(np.bitwise_xor(self.words, normalized_other.words))
+            case Operator.NOT | Operator.XOR:
+                raise ValueError(f"{operation} nie jest tu operacją dwuargumentową")
+            case _:
+                assert_never(operation)
 
     def _add_variable_to_solution(
         self, variable_index: int, is_negated: bool = False, initialize_solution: bool = True
