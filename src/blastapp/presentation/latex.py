@@ -1,6 +1,6 @@
-"""Składa równanie funkcji OTA w LaTeX-u, z kolorowaniem zmiennych i zawijaniem linii.
+"""Builds the OTA equation in LaTeX, with coloured variables and wrapped lines.
 
-Zwraca tekst, a nie rysuje — decyzja, gdzie go pokazać, należy do interfejsu (#10).
+Returns text rather than drawing; where to show it is the interface's decision (#10).
 """
 
 import re
@@ -14,10 +14,7 @@ def latex_equation(ota_function: OtaFunction, max_length: int = 255) -> str:
     expression = re.sub(r"a_(\d+)", r"a_{\1}", equation_text(ota_function))
 
     def color_variable(match: re.Match[str]) -> str:
-        """Nadaje zmiennej kolor z palety motywu.
-
-        Paleta obsługuje dowolną liczbę zmiennych, więc żadna nie ląduje na kolorze zastępczym.
-        """
+        """Colour a variable from the theme palette, which covers any number of variables."""
         var = match.group(0)
         digits = re.search(r"\d+", var)
         position = int(digits.group()) if digits else 0
@@ -32,8 +29,6 @@ def latex_equation(ota_function: OtaFunction, max_length: int = 255) -> str:
         """
         Strips LaTeX formatting from a token for length measurement.
 
-        :param token: Token to clean.
-        :return: Token without LaTeX commands and brackets.
         """
         return re.sub(r"\\textcolor\{[^\}]+\}|\{|\}", "", token)
 

@@ -1,16 +1,16 @@
-"""Wyjątki warstwy wyrażeń.
+"""Exceptions of the expression layer.
 
-Parser albo zwraca kompletną formułę, albo rzuca — nie ma stanu pośredniego ani listy błędów
-do przejrzenia (#25).
+The parser either returns a complete formula or raises — there is no partial state and no error
+list to walk (#25).
 
-Typów jest cztery, bo tyle jest sytuacji, na które wywołujący może zareagować inaczej. Każdy
-niesie oryginalne wyrażenie w polu `expression`, żeby warstwa prezentacji mogła zbudować własny
-komunikat zamiast przekazywać dalej goły tekst techniczny.
+Four types, because that is how many situations a caller can react to differently. Each carries
+the original text in `expression`, so the presentation layer can build its own message instead of
+forwarding raw technical English.
 """
 
 
 class ExpressionError(Exception):
-    """Wyrażenia nie da się sparsować. Baza dla wszystkich błędów tej warstwy."""
+    """The expression cannot be parsed. Base for every error of this layer."""
 
     def __init__(self, message: str, expression: str = "") -> None:
         super().__init__(message)
@@ -18,10 +18,10 @@ class ExpressionError(Exception):
 
 
 class EmptyExpressionError(ExpressionError):
-    """Brak wyrażenia do sparsowania.
+    """Nothing to parse.
 
-    Osobny typ, bo dla interfejsu to nie jest błąd składni, tylko puste pole — inny komunikat
-    i inna reakcja niż przy literówce.
+    A separate type because to the interface this is an empty field rather than a syntax error,
+    and it deserves a different message.
     """
 
     def __init__(self, expression: str = "") -> None:
@@ -29,25 +29,25 @@ class EmptyExpressionError(ExpressionError):
 
 
 class UnbalancedParenthesesError(ExpressionError):
-    """Nawiasy się nie domykają."""
+    """Parentheses do not balance."""
 
     def __init__(self, expression: str) -> None:
         super().__init__("Parentheses are not balanced.", expression)
 
 
 class InvalidCharacterError(ExpressionError):
-    """Wyrażenie zawiera znak, którego składnia nie przewiduje."""
+    """The expression contains a character the syntax does not allow."""
 
     def __init__(self, expression: str) -> None:
         super().__init__("Expression contains invalid characters.", expression)
 
 
 class MalformedExpressionError(ExpressionError):
-    """Znaki są dopuszczalne, ale nie układają się w formułę.
+    """The characters are allowed but do not form a formula.
 
-    Obejmuje nierozpoznany atom, operator bez argumentu i operator w złym miejscu — z punktu
-    widzenia wywołującego to jedna sytuacja: użytkownik ma poprawić zapis. Szczegół siedzi
-    w komunikacie, nie w osobnym typie (#21).
+    Covers an unrecognised atom, an operator without an operand and an operator in the wrong
+    place — to the caller these are one situation: the user has to fix the text. The detail lives
+    in the message, not in a separate type (#21).
     """
 
     def __init__(self, message: str, expression: str) -> None:

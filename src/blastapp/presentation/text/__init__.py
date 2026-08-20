@@ -1,1 +1,1 @@
-"""Renderowanie tekstowe: wyrażenia, drzewa, tabele terminalowe."""
+"""Text rendering: expressions, trees, terminal tables."""

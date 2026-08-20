@@ -1,6 +1,6 @@
-"""Kody ANSI używane w wyjściu terminalowym.
+"""ANSI codes used in terminal output.
 
-Tylko te, które mają konsumenta — stała bez użycia to kod do utrzymywania bez powodu (#21).
+Only the ones with a consumer: an unused constant is code to maintain for no reason (#21).
 """
 
 BG_BLUE = "\033[44m"

@@ -1,7 +1,7 @@
-"""Zestawienie wyniku w postaci tabelarycznej.
+"""The result as tables.
 
-Buduje ramkę wprost z `SolverResult`, więc nie musi wiedzieć, który silnik liczył. Pandas
-zostaje po tej stronie granicy — rdzeń obliczeniowy o nim nie wie (#10).
+Frames are built straight from `SolverResult`, so this never has to know which engine ran. Pandas
+stays on this side of the boundary; the computational core knows nothing about it (#10).
 """
 
 import pandas as pd
@@ -10,13 +10,9 @@ from blastapp.domain.solving.result import SolverResult
 
 
 def results_frame(result: SolverResult, result_column: str) -> pd.DataFrame:
-    """Wszystkie wartościowania z wynikiem formuły, po jednym wierszu na wartościowanie.
+    """Every assignment with its result, one row each.
 
-    Kolumny idą od zmiennej o najwyższej pozycji bitowej do najniższej — tak, jak czyta się
-    liczbę binarną.
-
-    :param result_column: Nagłówek kolumny z wynikiem; podaje go wywołujący, bo tylko on wie,
-        w jakim języku mówi do użytkownika.
+    Columns run from the highest bit position down to the lowest, the way a binary number reads.
     """
     positions = sorted(result.variables.positions.items(), key=lambda item: -item[1])
     table = result.truth_table
@@ -34,7 +30,7 @@ def results_frame(result: SolverResult, result_column: str) -> pd.DataFrame:
 def variable_mapping_frame(
     result: SolverResult, binary_column: str, propositional_column: str
 ) -> pd.DataFrame:
-    """Zestawienie zmiennej algebry binarnej z nazwą użytą w formule."""
+    """Algebra variable against the name used in the formula."""
     rows = sorted(result.variables.positions.items(), key=lambda item: item[1])
     return pd.DataFrame(
         [{binary_column: f"a{position}", propositional_column: name} for name, position in rows]

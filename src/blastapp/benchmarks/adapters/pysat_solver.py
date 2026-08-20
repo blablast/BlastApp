@@ -9,16 +9,13 @@ from blastapp.benchmarks.engine_adapter import SolverAdapter
 
 
 class PySatAdapter(SolverAdapter):
-    """Zlicza modele, odcinając po każdym znalezionym jego negację."""
+    """Counts models by blocking each one found with its negation."""
 
     name = "PySAT"
 
     def count_solutions(self, clauses: Sequence[Sequence[int]]) -> int:
-        """Solver jest tworzony i zamykany na każdą instancję.
-
-        Trzymany między instancjami nie zwalnia uchwytu po stronie biblioteki C, a przebieg
-        obejmuje ich setki.
-        """
+        """A fresh solver per instance: kept across instances it never releases its handle on the C
+        side, and a run covers hundreds of them."""
         with Glucose3(bootstrap_with=CNF(from_clauses=[list(c) for c in clauses])) as solver:
             found = 0
             while solver.solve():

@@ -1,6 +1,6 @@
-"""Wykonuje macierz przebiegów i zbiera pomiary.
+"""Runs the measurement matrix and collects the results.
 
-Zwraca dane — zapis do pliku i wypisywanie postępu należą do wywołującego (#10).
+It returns data; writing files and printing progress belong to the caller (#10).
 """
 
 from collections.abc import Callable, Iterator, Sequence
@@ -14,7 +14,7 @@ from blastapp.benchmarks.settings import DEFAULT_SETTINGS, BenchmarkSettings
 
 @dataclass(frozen=True, slots=True)
 class Measurement:
-    """Jeden pomiar: który solver, jaka instancja, ile trwało."""
+    """One measurement: which solver, which instance, how long."""
 
     test_id: int
     solver: str
@@ -26,12 +26,12 @@ class Measurement:
 
     @property
     def was_skipped(self) -> bool:
-        """Czy pomiar został pominięty z powodu przekroczonego progu czasu."""
+        """Whether the measurement was skipped for crossing the time threshold."""
         return self.seconds is None
 
 
 class BenchmarkRunner:
-    """Przepuszcza kolejne instancje przez zestaw adapterów."""
+    """Feeds instances through a set of adapters."""
 
     def __init__(
         self,
@@ -39,21 +39,17 @@ class BenchmarkRunner:
         settings: BenchmarkSettings = DEFAULT_SETTINGS,
         report: Callable[[str], None] = lambda _: None,
     ) -> None:
-        """
-        :param adapters: Fabryki adapterów; każda instancja dostaje świeży adapter.
-        :param settings: Parametry przebiegu.
-        :param report: Dokąd wypisywać postęp; domyślnie donikąd.
-        """
+        """ """
         self._adapters = list(adapters)
         self._settings = settings
         self._report = report
 
     def run(self) -> list[Measurement]:
-        """Wykonuje cały przebieg i zwraca pomiary."""
+        """Run everything and return the measurements."""
         return list(self.stream())
 
     def stream(self) -> Iterator[Measurement]:
-        """Wydaje pomiary na bieżąco, żeby długi przebieg dało się śledzić."""
+        """Yield measurements as they happen, so a long run can be followed."""
         generator = SatProblemGenerator(self._settings.random_seed)
         slowest: dict[str, float] = {}
         test_id = 0
@@ -70,13 +66,11 @@ class BenchmarkRunner:
     def _measure(
         self, adapter: SolverAdapter, instance: SatInstance, test_id: int, slowest: dict[str, float]
     ) -> Measurement:
-        """Mierzy jeden przebieg albo go pomija, gdy solver już przekroczył próg czasu.
+        """Measure one run, or skip it once the solver has crossed the threshold.
 
-        Pominięcie jest trwałe i to jest zamierzone: instancje rosną monotonicznie, więc solver,
-        który nie wyrobił się na mniejszej, tym bardziej nie wyrobi się na większej.
-
-        Zapamiętywany jest czas NAJDŁUŻSZEGO przebiegu, nie ostatniego — inaczej jeden szybki
-        wynik kasowałby pamięć o wolnym.
+        The skip is permanent on purpose: instances grow monotonically, so a solver that missed on
+        a smaller one will not make a larger one. The time kept is that of the SLOWEST run, not the
+        last, or one fast result would erase the memory of a slow one.
         """
         blank = Measurement(
             test_id,

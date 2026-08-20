@@ -1,1 +1,1 @@
-"""Reprezentacje formuły: funkcja OTA i bitowa tablica prawdy."""
+"""Formula representations: the OTA function and the bitwise truth table."""

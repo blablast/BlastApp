@@ -1,8 +1,8 @@
-"""Sprowadza zapis symboliczny wyrażenia do słów kluczowych.
+"""Rewrites symbolic notation into keywords.
 
-Aliasy pochodzą z jedynej tabeli operatorów i są próbowane od najdłuższego: `=>` jest fragmentem
-`<=>` i `==>`, więc krótszy alias musi czekać na swoją kolej — inaczej równoważność rozpadłaby
-się na implikację.
+Aliases come from the single operator table and are tried longest first: `=>` is a fragment of
+`<=>` and `==>`, so the shorter alias has to wait its turn or equivalence falls apart into
+implication.
 """
 
 import re
@@ -22,14 +22,9 @@ _EXTRA_REPLACEMENTS = {
 
 
 def normalize(expression: str) -> str:
-    """
-    Zamienia symbole na słowa kluczowe i porządkuje odstępy.
+    """Replace symbols with keywords and tidy the spacing.
 
-    :param expression: Wyrażenie w zapisie użytkownika.
-    :type expression: str
-    :return: Wyrażenie w postaci znormalizowanej.
-    :rtype: str
-    :raises EmptyExpressionError: Gdy wejście jest puste albo nie jest tekstem.
+    :raises EmptyExpressionError: when the input is empty or not a string.
     """
     if not isinstance(expression, str) or not expression.strip():
         raise EmptyExpressionError(expression if isinstance(expression, str) else "")
@@ -42,5 +37,5 @@ def normalize(expression: str) -> str:
         expression = re.sub(pattern, replacement, expression, flags=re.IGNORECASE)
 
     expression = re.sub(" {2}", " ", expression, flags=re.IGNORECASE)
-    # Zapis `a_0` jest równoważny `a0`: cyfra ma znaczenie, podkreślenie nie.
+    # `a_0` means the same as `a0`: the digit matters, the underscore does not.
     return re.sub(r"a_(\d+)", r"a\1", expression)

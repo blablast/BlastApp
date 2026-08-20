@@ -43,11 +43,11 @@ def test_domain_imports_nothing_from_the_outer_layers(path: Path) -> None:
         for forbidden in FORBIDDEN
         if module == forbidden or module.startswith(f"{forbidden}.")
     }
-    assert not offenders, f"{path.name} importuje z warstwy zewnętrznej: {sorted(offenders)}"
+    assert not offenders, f"{path.name} imports from an outer layer: {sorted(offenders)}"
 
 
 def test_domain_is_importable_on_its_own() -> None:
-    """Rdzeń musi dać się policzyć bez niczego z warstwy prezentacji."""
+    """The core must solve without anything from the presentation layer."""
     from blastapp.domain.expressions.formula import Formula
     from blastapp.domain.expressions.nodes import OperationNode, VariableNode
     from blastapp.domain.expressions.variables import VariableMap

@@ -1,4 +1,4 @@
-"""Wykres porównania czasów silników."""
+"""Bar chart comparing engine timings."""
 
 import plotly.graph_objects as go
 import streamlit as st
@@ -8,7 +8,7 @@ from blastapp.presentation.settings import DEFAULT_SETTINGS
 
 
 def render_timing_chart(results: list[SolverResult], texts: dict[str, str]) -> None:
-    """Rysuje słupki z czasem każdego silnika."""
+    """Draws one bar per engine."""
     if not results:
         return
 

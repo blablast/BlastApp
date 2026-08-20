@@ -5,17 +5,11 @@ from blastapp.domain.operators import Operator
 
 
 def reduce_negations(node: Node) -> Node:
-    """
-    Wciąga negację do liści: NOT nad zmienną staje się zmienną zanegowaną.
+    """Push negation into the leaves: NOT over a variable becomes a negated variable.
 
-    Zwraca węzeł, który ma stać w tym miejscu, więc reguła działa tak samo na korzeniu
-    i wewnątrz drzewa. Podwójna negacja NIE jest upraszczana — `~~a0` zostaje jako NOT nad
-    zmienną zanegowaną, bo to byłoby inne przekształcenie, o innym uzasadnieniu.
-
-    :param node: Węzeł do uproszczenia.
-    :type node: Node
-    :return: Węzeł po uproszczeniu.
-    :rtype: Node
+    Returns the node that belongs in this position, so the rule applies at the root as well as
+    inside the tree. Double negation is NOT simplified — `~~a0` stays as NOT over a negated
+    variable, since collapsing it is a different rewrite with a different justification.
     """
     if not isinstance(node, OperationNode):
         return node

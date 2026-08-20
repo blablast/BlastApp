@@ -1,50 +1,39 @@
-"""Tablica prawdy formuły zakodowana w tablicy bajtów numpy.
+"""Truth table stored as a numpy byte array: bit `i` is the result for assignment `i`.
 
-Bit `i` tablicy to wynik dla wartościowania `i`; bajt `b` trzyma bity `8b..8b+7`, licząc od
-najmniej znaczącego. Szerokość to `2^len(variables)` bitów, a bity powyżej niej są zerowe —
-na tym niezmienniku opiera się negacja i porównanie z prawdą.
+Width is `2^len(variables)` bits and every bit above it stays zero; negation and the tautology
+check rely on that invariant.
 
-DLACZEGO NUMPY, A NIE JEDNA LICZBA CAŁKOWITA. Na tablicy 8 MB operacje bitowe na `np.uint8`
-są trzykrotnie szybsze niż na wielkiej liczbie (0.52 ms wobec 1.61 ms), a dołożenie zmiennej —
-najgorętsza operacja, bo podwaja tablicę — pięćdziesięciokrotnie, bo sprowadza się do powielenia
-bajtów zamiast do rozsuwania bitów maskami. Rozwiązanie pośrednie, liczące w numpy i trzymające
-wynik jako liczbę, nie daje nic: `int.to_bytes` i `int.from_bytes` kosztują tyle, ile oszczędza
-sam przebieg. Liczba całkowita powstaje więc RAZ, na granicy modułu.
+Bytes rather than one big integer: numpy bitwise ops beat integer ones on wide tables, and adding
+a variable — the hot operation, since it doubles the table — becomes a byte duplication instead of
+a masked bit spread. Computing in numpy while keeping the value as an integer gains nothing, since
+the round trip through `to_bytes`/`from_bytes` costs what the faster pass saves. The integer is
+therefore built once, at the module boundary.
 
-MUTOWALNA, i to jest decyzja, nie niedopatrzenie. Dołożenie zmiennej PODWAJA długość tablicy:
-przy 25 zmiennych to około 4 MB. Kopiowanie obu argumentów przy każdej operacji podwoiłoby ruch
-pamięci w gorącej pętli i przewróciło dokładnie ten benchmark, dla którego ta aplikacja powstała.
-
-Warunki, na jakich mutacja tu obowiązuje:
-
-1. Nazwy zapowiadają efekt: `align_with`, `apply_in_place` i `negate_in_place` zwracają `None`,
-   bo są poleceniami, nie zapytaniami (#04, #08).
-2. Argument przekazany do `apply_in_place` jest **zużyty** — `align_with` dopisuje mu brakujące
-   zmienne, więc po wywołaniu nie wolno go użyć ponownie.
-3. Klasa nie opuszcza warstwy algebry bitowej; na zewnątrz wychodzi niemutowalny `TruthTable`.
+Mutable on purpose. Adding a variable doubles the table — about 4 MB at 25 variables — so copying
+both operands per operation would double memory traffic in the hot loop. The terms: commands are
+named for their effect and return `None`; the operand passed to `apply_in_place` is **consumed**,
+because `align_with` grows it; and the class never leaves the bit algebra, which hands out an
+immutable `TruthTable` instead.
 """
 
 from bisect import bisect_right
-from typing import assert_never
+from typing import Self, assert_never
 
 import numpy as np
 
 from blastapp.domain.operators import Operator
 
+# Byte -> word lookups, keyed by group width. Groups narrower than a byte cannot be duplicated by
+# moving bytes around, and `unpackbits` would allocate eight times the data.
+_DUPLICATION_TABLES: dict[int, np.ndarray] = {}
+
+# From these many variables up the width is a whole number of bytes, so every byte is full, and the
+# "bits above the width are zero" invariant holds without masking.
+_VARIABLES_PER_FULL_BYTE = 3
+
 
 def _duplication_table(group_bits: int) -> np.ndarray:
-    """
-    Tablica bajt -> słowo, w której każda grupa `group_bits` bitów występuje dwukrotnie.
-
-    Grupy węższe od bajtu nie dają się powielić przestawieniem bajtów, a droga przez
-    `unpackbits` alokuje ośmiokrotność danych. Podstawienie z tablicy 256-elementowej
-    załatwia to jednym przebiegiem numpy.
-
-    :param group_bits: Szerokość grupy w bitach; 1, 2 albo 4.
-    :type group_bits: int
-    :return: Tablica 256 słów szesnastobitowych w porządku little-endian.
-    :rtype: np.ndarray
-    """
+    """Lookup where every group of `group_bits` bits in a byte appears twice."""
     table = _DUPLICATION_TABLES.get(group_bits)
     if table is None:
         table = np.zeros(256, dtype="<u2")
@@ -60,125 +49,62 @@ def _duplication_table(group_bits: int) -> np.ndarray:
     return table
 
 
-#: Tablice powielania zależą wyłącznie od szerokości grupy i mają po 512 bajtów, więc komplet
-#: mieści się w pamięci bez żadnego budżetu — inaczej niż maski o szerokości całej tablicy.
-_DUPLICATION_TABLES: dict[int, np.ndarray] = {}
-
-
-#: Od tylu zmiennych tablica ma szerokość będącą wielokrotnością bajtu, więc wszystkie bajty
-#: są pełne i niezmiennik "bity powyżej szerokości są zerem" utrzymuje się sam.
-_VARIABLES_PER_FULL_BYTE = 3
-
-
 class BitTable:
     def __init__(self, initial_solution: int = 0):
-        """
-        :param initial_solution: Wartość zdania bez zmiennych: 0 albo 1.
-        :type initial_solution: int
-        """
-        # Pozycje bitowe zmiennych, rosnąco. Sama pozycja wystarcza: maski zmiennych nikt tu
-        # nie czyta, a dają się wyliczyć z pozycji i szerokości tablicy.
+        # Bit positions, ascending. The position alone is enough: variable masks are never read
+        # here and follow from the position and the table width.
         self.variables: list[int] = []
         self.words = np.array([initial_solution & 1], dtype=np.uint8)
 
     @classmethod
-    def create_with_variable(cls, variable_index: int, is_negated: bool = False) -> "BitTable":
-        """
-        :param variable_index: Pozycja bitowa zmiennej.
-        :type variable_index: int
-        :param is_negated: Czy zmienna występuje zanegowana.
-        :type is_negated: bool
-        :return: Tablica opisująca pojedynczy literał.
-        :rtype: BitTable
-        """
+    def create_with_variable(cls, variable_index: int, is_negated: bool = False) -> Self:
         instance = cls()
         instance._add_variable_to_solution(variable_index, is_negated, True)
         return instance
 
     @property
     def solution(self) -> int:
-        """Tablica jako jedna liczba całkowita — postać na granicę modułu, nie do liczenia."""
+        """The table as one integer — the boundary form, not something to compute with."""
         return int.from_bytes(self.words.tobytes(), "little")
 
     def add_missed_variables(self) -> None:
-        """Dopełnia luki w pozycjach bitowych zmiennymi, które wypadły przy uproszczeniu.
+        """Fill gaps left by variables that dropped out during simplification.
 
-        Bez tego zmienne, które przetrwały, siedzą na złych bitach: `(a0 & ~a0) | a1` zostawia
-        samo `a1`, a wynik odczytany bez dopełnienia opisywałby zupełnie inną formułę.
+        Without it the survivors sit on the wrong bits: `(a0 & ~a0) | a1` leaves only `a1`, and
+        the result read back would describe a different formula.
         """
-        if len(self.variables) > 0:
-            last_index = self.highest_index()
-            for i in range(last_index):
-                self._add_variable_to_solution(i)
+        if self.variables:
+            for index in range(self.highest_index()):
+                self._add_variable_to_solution(index)
 
     def highest_index(self) -> int:
-        """Najwyższa pozycja bitowa; `-1` dla tablicy bez zmiennych, żeby porównania miały sens.
-
-        `variables` jest utrzymywane rosnąco, więc wystarczy ostatni element — bez kopiowania
-        listy, bo kolejność łączenia odpytuje o to przy każdym porównaniu.
-        """
+        """Highest bit position, or `-1` when there are no variables."""
         return self.variables[-1] if self.variables else -1
 
     def is_true(self) -> bool:
-        """Czy zdanie jest tautologią.
+        """Whether the proposition is a tautology.
 
-        Porównanie z gotowym wzorcem wymagałoby zaalokowania tablicy tej samej szerokości —
-        a sprawdzenie wypada po każdym scaleniu pary, więc przy 28 zmiennych byłoby to
-        kilkadziesiąt megabajtów na jedno pytanie. `min()` przechodzi dane bez alokacji.
+        Comparing against a ready pattern would allocate a table of the same width on every call,
+        and the check runs after every merged pair. `min()` walks the data without allocating.
         """
         if len(self.variables) >= _VARIABLES_PER_FULL_BYTE:
             return int(self.words.min()) == 0xFF
         return int(self.words[0]) == self._tail_mask()
 
     def is_false(self) -> bool:
-        """Czy zdanie jest sprzecznością."""
         return not bool(self.words.any())
 
     def negate_in_place(self) -> None:
-        """Neguje tablicę w miejscu."""
-        self.words = self._negated_words()
+        self.words = self._negated(self.words)
 
-    def _negated_words(self) -> np.ndarray:
-        """Dopełnienie bitowe tablicy."""
-        return self._negated(self.words)
+    def apply_in_place(self, operation: Operator, other: Self) -> None:
+        """Apply a binary operation, storing the result here; `other` is consumed.
 
-    def _negated(self, words: np.ndarray) -> np.ndarray:
-        """
-        Dopełnienie bitowe utrzymujące niezmiennik: bity powyżej szerokości zostają zerem.
+        The match is exhaustive over `Operator`, so adding one there stops type checking right
+        here instead of at a runtime error. Only operations numpy does in a single instruction
+        live here; `NOT`, `XOR` and `IMP` are composed by the algebra.
 
-        Od trzech zmiennych w górę wszystkie bajty są pełne, więc samo `bitwise_not` już go
-        utrzymuje i maska jest zbędna — a kosztowałaby dwa dodatkowe przebiegi po całej tablicy.
-
-        :param words: Bajty do zanegowania.
-        :type words: np.ndarray
-        :return: Zanegowane bajty.
-        :rtype: np.ndarray
-        """
-        negated: np.ndarray = np.bitwise_not(words)
-        if len(self.variables) < _VARIABLES_PER_FULL_BYTE:
-            negated &= self._tail_mask()
-        return negated
-
-    def apply_in_place(self, operation: Operator, other: "BitTable") -> None:
-        """
-        Wykonuje operację dwuargumentową, zapisując wynik w tej tablicy.
-
-        Dopasowanie jest wyczerpujące wobec `Operator`, więc dopisanie tam nowego operatora
-        zatrzyma sprawdzanie typów właśnie tutaj — a nie dopiero na wyjątku w czasie działania.
-        Obsługiwane są operacje, które numpy wykonuje jedną instrukcją: `AND`, `OR` oraz `EQ`
-        przez natywny `XOR`. `NOT` jest jednoargumentowy i ma `negate_in_place`, a `XOR` i `IMP`
-        algebra składa z pozostałych — dla nich wejście tutaj jest błędem wołającego.
-
-        Równoważność zostaje mimo możliwości złożenia: wyprowadzona z samych `AND`, `OR` i `NOT`
-        wymaga pięciu przebiegów i dwóch kopii całej tablicy, co na łańcuchu `a <=> b <=> c`
-        kosztuje 1.75x.
-
-        :param operation: Operacja do wykonania.
-        :type operation: Operator
-        :param other: Druga tablica; po wywołaniu jest ZUŻYTA, bo `align_with` ją rozszerza.
-        :type other: BitTable
-        :return: None
-        :raises ValueError: Gdy operator nie jest dwuargumentowy w tej algebrze.
+        :raises ValueError: when the operator is not one of the primitives.
         """
         normalized_other = self.align_with(other)
 
@@ -190,27 +116,45 @@ class BitTable:
             case Operator.EQ:
                 self.words = self._negated(np.bitwise_xor(self.words, normalized_other.words))
             case Operator.NOT | Operator.XOR | Operator.IMP:
-                raise ValueError(f"{operation} nie jest tu operacją podstawową")
+                raise ValueError(f"{operation} is not a primitive here")
             case _:
                 assert_never(operation)
+
+    def align_with(self, other: Self) -> Self:
+        """Grow both tables to a common variable set and return `other`, now consumed."""
+        # Sets up front: testing membership inside the comprehension would rebuild the collection
+        # per index, turning linear work into quadratic.
+        other_indices = set(other.variables)
+        self_indices = set(self.variables)
+        other_missing = [index for index in self.variables if index not in other_indices]
+        self_missing = [index for index in other.variables if index not in self_indices]
+
+        for index in other_missing:
+            other._add_variable_to_solution(index, False, False)
+        for index in self_missing:
+            self._add_variable_to_solution(index, False, False)
+
+        return other
+
+    def variable_count(self) -> int:
+        return len(self.variables)
+
+    def _negated(self, words: np.ndarray) -> np.ndarray:
+        """Bitwise complement that keeps bits above the width zero.
+
+        From three variables up every byte is full, so `bitwise_not` alone keeps the invariant and
+        masking would only add passes over the whole table.
+        """
+        negated: np.ndarray = np.bitwise_not(words)
+        if len(self.variables) < _VARIABLES_PER_FULL_BYTE:
+            negated &= self._tail_mask()
+        return negated
 
     def _add_variable_to_solution(
         self, variable_index: int, is_negated: bool = False, initialize_solution: bool = True
     ) -> None:
-        """
-        Dokłada zmienną, podwajając szerokość tablicy.
-
-        :param variable_index: Pozycja bitowa zmiennej.
-        :type variable_index: int
-        :param is_negated: Czy pierwsza zmienna tablicy występuje zanegowana.
-        :type is_negated: bool
-        :param initialize_solution: Czy pierwsza zmienna ma nadać tablicy wartość literału;
-            przy dorównywaniu zmiennych tablica zachowuje dotychczasową treść.
-        :type initialize_solution: bool
-        :return: None
-        """
-        # Jedna bisekcja daje i odpowiedź "czy już jest", i miejsce wstawienia — a `variables`
-        # jest posortowane, więc liniowe przeszukanie byłoby tu podwójną pracą.
+        # One bisection answers both "is it already there" and "where does it go"; `variables` is
+        # sorted, so a linear scan would be duplicate work.
         index = bisect_right(self.variables, variable_index)
         if index and self.variables[index - 1] == variable_index:
             return
@@ -222,27 +166,16 @@ class BitTable:
             self.words = self._expand_bit_groups(self.words, index)
 
     def _expand_bit_groups(self, words: np.ndarray, bit_group_size: int) -> np.ndarray:
-        """
-        Powiela każdą grupę bitów, bo dołożenie zmiennej podwaja tablicę.
+        """Duplicate every group of `2^bit_group_size` bits, because adding a variable doubles
+        the table.
 
-        Grupa obejmująca całe bajty sprowadza się do powtórzenia wierszy, węższa — do
-        podstawienia z `_duplication_table`. Wynik przycinamy do szerokości wynikającej
-        z liczby zmiennych: przy tablicach węższych od bajtu podstawienie zwraca dwa bajty,
-        z których drugi jest zerem, bo bity nadmiarowe wejścia też są zerowe.
-
-        :param words: Bajty tablicy przed dołożeniem zmiennej.
-        :type words: np.ndarray
-        :param bit_group_size: Logarytm rozmiaru grupy; grupa ma 2^bit_group_size bitów.
-        :type bit_group_size: int
-        :return: Bajty tablicy po dołożeniu zmiennej.
-        :rtype: np.ndarray
+        The result is trimmed to the width implied by the variable count: for tables narrower than
+        a byte the lookup returns two bytes, the second of them zero.
         """
         group_size = 1 << bit_group_size
         if group_size >= 8:
             bytes_per_group = group_size // 8
             if bytes_per_group == 1:
-                # Powtórzenie elementów nie wymaga zmiany kształtu, a przy najwęższych
-                # tablicach narzut `reshape` i `ravel` jest widoczny obok samej pracy.
                 widened = np.repeat(words, 2)
             else:
                 widened = np.repeat(words.reshape(-1, bytes_per_group), 2, axis=0).ravel()
@@ -257,39 +190,8 @@ class BitTable:
         return np.pad(widened, (0, expected - widened.size))
 
     def _byte_count(self) -> int:
-        """Ile bajtów zajmuje tablica przy obecnej liczbie zmiennych; co najmniej jeden."""
         return max(1, (1 << len(self.variables)) // 8)
 
     def _tail_mask(self) -> int:
-        """Maska jedynego, częściowego bajtu tablicy węższej niż bajt."""
+        """Mask of the single partial byte of a table narrower than a byte."""
         return (1 << (1 << len(self.variables))) - 1
-
-    def align_with(self, other: "BitTable") -> "BitTable":
-        """
-        Dorównuje obie tablice do wspólnego zbioru zmiennych.
-
-        Operacje bitowe wymagają tej samej szerokości i tego samego przyporządkowania bitów
-        do wartościowań, więc brakujące zmienne trzeba dołożyć po obu stronach.
-
-        :param other: Druga tablica; zostaje rozszerzona, czyli ZUŻYTA.
-        :type other: BitTable
-        :return: Ta sama druga tablica, już dorównana.
-        :rtype: BitTable
-        """
-        # Zbiory przed pętlą: sprawdzenie wewnątrz wyrażenia listowego przebudowywałoby
-        # kolekcję przy każdym indeksie, co daje koszt kwadratowy zamiast liniowego.
-        other_indices = set(other.variables)
-        self_indices = set(self.variables)
-        other_missing = [index for index in self.variables if index not in other_indices]
-        self_missing = [index for index in other.variables if index not in self_indices]
-
-        for index in other_missing:
-            other._add_variable_to_solution(index, False, False)
-        for index in self_missing:
-            self._add_variable_to_solution(index, False, False)
-
-        return other
-
-    def variable_count(self) -> int:
-        """Liczba zmiennych, które ta tablica opisuje."""
-        return len(self.variables)

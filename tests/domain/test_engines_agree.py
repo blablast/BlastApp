@@ -1,6 +1,6 @@
-"""Oba silniki muszą zgadzać się z niezależnym wzorcem i ze sobą.
+"""Both engines must agree with an independent oracle and with each other.
 
-Główna siatka bezpieczeństwa: każda zmiana w rozwiązywaniu ma zostawiać ten plik zielony.
+The main safety net: any change to solving has to leave this file green.
 """
 
 import pytest
@@ -40,7 +40,7 @@ NAMED_FORMULAS = [expression for _, expression in all_tautologies]
 
 
 def _values(engine: SolverEngine, formula: Formula) -> list[bool]:
-    """Wartości policzone przez silnik, w postaci wspólnej dla obu."""
+    """Values computed by an engine, in the form both share."""
     return list(LogicSolver(engine, with_ota_function=False).solve(formula).truth_table.as_values())
 
 
@@ -49,8 +49,8 @@ def test_indexed_formulas_match_oracle(expression: str) -> None:
     formula = parse_sequential(expression)
     expected = truth_values(formula)
 
-    assert _values(OTA_ENGINE, formula) == expected, "silnik OTA rozjechał się ze wzorcem"
-    assert _values(BLAST_ENGINE, formula) == expected, "silnik Blast rozjechał się ze wzorcem"
+    assert _values(OTA_ENGINE, formula) == expected, "the OTA engine disagrees with the oracle"
+    assert _values(BLAST_ENGINE, formula) == expected, "the Blast engine disagrees with the oracle"
 
 
 @pytest.mark.parametrize("expression", NAMED_FORMULAS)
@@ -58,6 +58,6 @@ def test_tautologies_match_oracle(expression: str) -> None:
     formula = parse_formula(expression)
     expected = truth_values(formula)
 
-    assert all(expected), "formuła z listy tautologii nie jest tautologią według wzorca"
-    assert _values(OTA_ENGINE, formula) == expected, "silnik OTA rozjechał się ze wzorcem"
-    assert _values(BLAST_ENGINE, formula) == expected, "silnik Blast rozjechał się ze wzorcem"
+    assert all(expected), "a formula from the tautology list is not a tautology per the oracle"
+    assert _values(OTA_ENGINE, formula) == expected, "the OTA engine disagrees with the oracle"
+    assert _values(BLAST_ENGINE, formula) == expected, "the Blast engine disagrees with the oracle"

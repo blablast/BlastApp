@@ -1,4 +1,4 @@
-"""Teksty interfejsu w języku angielskim."""
+"""English interface texts."""
 
 TEXTS: dict[str, str] = {
     "title": "Logic BlastSolver - solving logical expressions",

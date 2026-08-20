@@ -1,5 +1,5 @@
-"""Warstwa dziedziny: parser, AST, algebry i reprezentacje.
+"""Domain layer: parser, AST, algebras and representations.
 
-Nie importuje pandas, Streamlita, Graphviza, plotly, pysat ani kodów ANSI — prezentacja
-i benchmarki zależą od niej, nigdy odwrotnie (#14).
+It imports no pandas, Streamlit, Graphviz, plotly, pysat or ANSI codes — presentation and
+benchmarks depend on it, never the other way round (#14).
 """

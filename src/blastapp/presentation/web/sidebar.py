@@ -1,4 +1,4 @@
-"""Panel boczny: język, wybór silników i limit czasu."""
+"""Sidebar: language, engine selection and time limit."""
 
 from dataclasses import dataclass
 
@@ -14,27 +14,27 @@ LANGUAGE_BUTTONS = (("pl", "🇵🇱 Polski"), ("en", "🇬🇧 English"))
 
 @dataclass(frozen=True, slots=True)
 class SidebarSelection:
-    """Co użytkownik wybrał w panelu bocznym."""
+    """What the user picked in the sidebar."""
 
     language: str
     engine_keys: frozenset[str]
     timeout_seconds: int
 
     def wants(self, engine_key: str) -> bool:
-        """Czy silnik o podanym kluczu ma zostać uruchomiony."""
+        """Whether the engine with this key should run."""
         return engine_key in self.engine_keys
 
 
 def current_language() -> str:
-    """Język wybrany w tej sesji."""
+    """Language chosen for this session."""
     return str(st.session_state.get(LANGUAGE_KEY, DEFAULT_LANGUAGE))
 
 
 def render_sidebar() -> SidebarSelection:
-    """Rysuje panel boczny i zwraca wybory użytkownika.
+    """Draw the sidebar and return the user's choices.
 
-    Zmiana języka kończy się przeładowaniem strony: etykiety panelu powstają przed obsługą
-    kliknięcia, więc bez tego pokazywałyby poprzedni język aż do następnej akcji.
+    Changing the language reruns the page: the sidebar labels are built before the click is
+    handled, so without it they would show the previous language until the next action.
     """
     texts = translations(current_language())
 

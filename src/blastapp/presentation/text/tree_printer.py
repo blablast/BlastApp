@@ -1,4 +1,4 @@
-"""Rysuje drzewo formuły znakami ASCII."""
+"""Renders the formula tree in ASCII."""
 
 from blastapp.domain.expressions.formula import Formula
 from blastapp.domain.expressions.nodes import ConstantNode, Node, OperationNode, VariableNode
@@ -10,14 +10,14 @@ INDENT = "│   "
 
 
 def render_tree(formula: Formula) -> str:
-    """Zwraca drzewo formuły jako tekst wielolinijkowy."""
+    """The formula tree as multi-line text."""
     lines: list[str] = []
     _render_node(formula.root, lines, prefix="", is_last=True)
     return "\n".join(lines)
 
 
 def node_label(node: Node) -> str:
-    """Etykieta pojedynczego węzła."""
+    """Label for one node."""
     match node:
         case VariableNode(name=name, negated=negated):
             return f"{'~' if negated else ''}{name}"
@@ -25,7 +25,7 @@ def node_label(node: Node) -> str:
             return "True" if value else "False"
         case OperationNode(operator=operator):
             return operator.value
-    raise TypeError(f"Nie umiem opisać węzła: {type(node).__name__}")
+    raise TypeError(f"Cannot describe node: {type(node).__name__}")
 
 
 def _render_node(node: Node, lines: list[str], prefix: str, is_last: bool) -> None:

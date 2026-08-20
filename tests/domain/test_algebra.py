@@ -1,7 +1,7 @@
-"""Obie algebry spełniają ten sam kontrakt i dają te same wyniki.
+"""Both algebras honour the same contract and produce the same results.
 
-Test podstawialności (#12): ewaluator dostaje algebrę przez interfejs i nie może zauważyć,
-którą dostał.
+A substitutability test (#12): the evaluator receives an algebra through the interface and cannot
+tell which one it got.
 """
 
 from typing import Any
@@ -61,7 +61,7 @@ def test_both_algebras_agree_on_every_operator(
 @pytest.mark.parametrize("algebra_class", ALGEBRAS, ids=lambda c: c.__name__)
 def test_binary_operators_need_two_arguments(algebra_class: type[PropositionAlgebra[Any]]) -> None:
     algebra = algebra_class()
-    with pytest.raises(ValueError, match="dwóch argument"):
+    with pytest.raises(ValueError, match="at least two operands"):
         algebra.conjunction([algebra.variable(0, False)])
 
 
@@ -69,7 +69,7 @@ def test_binary_operators_need_two_arguments(algebra_class: type[PropositionAlge
 def test_contradictory_conjunction_short_circuits_to_false(
     algebra_class: type[PropositionAlgebra[Any]],
 ) -> None:
-    """Koniunkcja, która osiągnęła fałsz, nie zmieni się już od dalszych składników."""
+    """A conjunction that reached false cannot be changed by further operands."""
     root = OperationNode(Operator.AND, (a(0), a(0, negated=True), a(1)))
     assert evaluate(algebra_class, root, 2) == [False] * 4
 
@@ -78,7 +78,7 @@ def test_contradictory_conjunction_short_circuits_to_false(
 def test_variable_that_drops_out_keeps_the_others_in_place(
     algebra_class: type[PropositionAlgebra[Any]],
 ) -> None:
-    """Gdy zmienna znika przy uproszczeniu, pozostałe zostają na swoich pozycjach bitowych."""
+    """When a variable drops out during simplification, the others keep their bit positions."""
     root = OperationNode(
         Operator.OR, (OperationNode(Operator.AND, (a(0), a(0, negated=True))), a(1))
     )

@@ -1,1 +1,1 @@
-"""Interfejs Streamlit: sekcje strony i uruchamianie silników z limitem czasu."""
+"""Streamlit interface: page sections and running engines under a time limit."""

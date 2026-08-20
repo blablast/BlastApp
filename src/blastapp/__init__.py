@@ -1,1 +1,1 @@
-"""BlastApp — rozwiązywanie wyrażeń logicznych metodami Logiki Binarnej."""
+"""BlastApp - solving propositional formulas with binary logic."""

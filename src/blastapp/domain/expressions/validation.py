@@ -1,4 +1,4 @@
-"""Odrzuca wyrażenia, których nie ma sensu parsować."""
+"""Rejects expressions not worth parsing."""
 
 import re
 
@@ -12,15 +12,11 @@ ALLOWED_CHARACTERS = re.compile(r"^[a-zA-Z\d\s_()~&|<>!^=/\\∧∨⌐]+$", re.UN
 
 
 def check_expression(expression: str) -> None:
-    """
-    Sprawdza wyrażenie przed parsowaniem.
+    """Check an expression before parsing.
 
-    :param expression: Wyrażenie w zapisie użytkownika.
-    :type expression: str
-    :return: None
-    :raises EmptyExpressionError: Gdy wyrażenie jest puste.
-    :raises UnbalancedParenthesesError: Gdy nawiasy się nie domykają.
-    :raises InvalidCharacterError: Gdy występuje znak spoza składni.
+    :raises EmptyExpressionError: when the expression is empty.
+    :raises UnbalancedParenthesesError: when the parentheses do not balance.
+    :raises InvalidCharacterError: when a character falls outside the syntax.
     """
     if not expression or not expression.strip():
         raise EmptyExpressionError(expression or "")
@@ -35,7 +31,7 @@ def check_expression(expression: str) -> None:
 
 
 def parentheses_balanced(expression: str) -> bool:
-    """Czy każdy nawias otwierający ma swoją parę i żaden zamykający nie stoi przed nim."""
+    """Whether every opening parenthesis has a match and no closing one comes first."""
     depth = 0
     for character in expression:
         if character == "(":

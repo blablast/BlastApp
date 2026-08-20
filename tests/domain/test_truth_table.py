@@ -1,4 +1,4 @@
-"""Wspólna postać wyniku obu silników."""
+"""The result form both engines share."""
 
 import pytest
 
@@ -21,22 +21,22 @@ class TestConstruction:
 
     @pytest.mark.parametrize("count", [-1, -5])
     def test_negative_variable_count_is_refused(self, count: int) -> None:
-        with pytest.raises(ValueError, match="ujemna"):
+        with pytest.raises(ValueError, match="negative"):
             TruthTable(count, 0)
 
     def test_values_wider_than_the_table_are_refused(self) -> None:
-        """Nadmiarowy bit oznaczałby wynik dla wartościowania, którego nie ma."""
-        with pytest.raises(ValueError, match="bitów"):
+        """A surplus bit would be a result for an assignment that does not exist."""
+        with pytest.raises(ValueError, match="bits"):
             TruthTable(1, 0b1000)
 
     def test_length_that_is_not_a_power_of_two_is_refused(self) -> None:
-        with pytest.raises(ValueError, match="potęgą dwójki"):
+        with pytest.raises(ValueError, match="power of two"):
             TruthTable.from_values([True, False, True])
 
 
 class TestWidening:
     def test_added_variable_does_not_change_the_result(self) -> None:
-        """Zmienna, od której formuła nie zależy, tylko podwaja liczbę wierszy."""
+        """A variable the formula does not depend on only doubles the rows."""
         narrow = TruthTable.from_values([False, True])
         assert narrow.widened_to(2).as_values() == [False, True, False, True]
 
@@ -51,7 +51,7 @@ class TestWidening:
         assert table.widened_to(2) is table
 
     def test_narrowing_is_refused(self) -> None:
-        with pytest.raises(ValueError, match="zwęzić"):
+        with pytest.raises(ValueError, match="Cannot narrow"):
             TruthTable(3, 0).widened_to(1)
 
 
@@ -60,7 +60,7 @@ class TestAccess:
         assert list(TruthTable(2, 0b1010).true_assignments()) == [1, 3]
 
     def test_assignment_out_of_range_is_refused(self) -> None:
-        with pytest.raises(IndexError, match="poza zakresem"):
+        with pytest.raises(IndexError, match="out of range"):
             TruthTable(2, 0).value_at(4)
 
 
@@ -70,12 +70,12 @@ class TestStatistics:
         assert (statistics.total, statistics.true_count, statistics.false_count) == (4, 3, 1)
 
     def test_tautology_and_contradiction_are_derived_not_stored(self) -> None:
-        """Wyprowadzane z tablicy, nie przechowywane — nie ma czego rozsynchronizować."""
+        """Derived from the table rather than stored, so there is nothing to desynchronise."""
         assert SolutionStatistics.of(TruthTable(2, 0b1111)).is_tautology
         assert SolutionStatistics.of(TruthTable(2, 0)).is_contradiction
         middling = SolutionStatistics.of(TruthTable(2, 0b0110))
         assert not middling.is_tautology and not middling.is_contradiction
 
     def test_more_true_than_total_is_refused(self) -> None:
-        with pytest.raises(ValueError, match="prawdziwych"):
+        with pytest.raises(ValueError, match="true out of"):
             SolutionStatistics(total=2, true_count=3)

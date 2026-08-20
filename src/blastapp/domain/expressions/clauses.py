@@ -1,8 +1,7 @@
-"""Buduje formułę z klauzul CNF podanych jako liczby całkowite.
+"""Builds a formula from CNF clauses given as integers.
 
-Konwencja DIMACS: literał n oznacza zmienną na pozycji bitowej |n|-1, znak minus jej negację.
-
-Dzięki temu benchmarki nie potrzebują parsera — nie składają tekstu po to, żeby zaraz go rozebrać.
+DIMACS convention: literal n is the variable at bit position |n|-1, a minus sign negates it.
+The benchmarks therefore never touch the parser — no assembling text just to take it apart.
 """
 
 from collections.abc import Sequence
@@ -14,20 +13,16 @@ from blastapp.domain.operators import Operator
 
 
 def formula_from_clauses(clauses: Sequence[Sequence[int]]) -> Formula:
-    """
-    Składa koniunkcję klauzul w formułę.
+    """Join the clauses into a conjunction.
 
-    :param clauses: Klauzule w konwencji DIMACS; literał n to zmienna a{|n|-1}.
-    :return: Formuła gotowa do policzenia.
-    :rtype: Formula
-    :raises ValueError: Gdy lista klauzul jest pusta, klauzula jest pusta albo literał to zero.
+    :raises ValueError: when the clause list is empty, a clause is empty, or a literal is zero.
     """
     if not clauses:
-        raise ValueError("Formuła CNF musi mieć co najmniej jedną klauzulę")
+        raise ValueError("A CNF formula needs at least one clause")
 
     positions = sorted({abs(literal) - 1 for clause in clauses for literal in clause})
     if any(position < 0 for position in positions):
-        raise ValueError("Literał 0 nie oznacza żadnej zmiennej")
+        raise ValueError("Literal 0 denotes no variable")
 
     variables = VariableMap({f"a{position}": position for position in positions})
     root = _join(Operator.AND, [_clause_node(clause) for clause in clauses])
@@ -35,9 +30,9 @@ def formula_from_clauses(clauses: Sequence[Sequence[int]]) -> Formula:
 
 
 def _clause_node(clause: Sequence[int]) -> Node:
-    """Zamienia jedną klauzulę na alternatywę literałów."""
+    """One clause as a disjunction of literals."""
     if not clause:
-        raise ValueError("Pusta klauzula nie ma wartości logicznej")
+        raise ValueError("An empty clause has no truth value")
     literals = [
         VariableNode(index=abs(literal) - 1, name=f"a{abs(literal) - 1}", negated=literal < 0)
         for literal in clause
@@ -46,5 +41,5 @@ def _clause_node(clause: Sequence[int]) -> Node:
 
 
 def _join(operator: Operator, operands: Sequence[Node]) -> Node:
-    """Łączy węzły operatorem n-arnym; pojedynczy węzeł zwraca bez zbędnego opakowania."""
+    """Join nodes under an n-ary operator; a lone node is returned unwrapped."""
     return operands[0] if len(operands) == 1 else OperationNode(operator, tuple(operands))

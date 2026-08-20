@@ -1,8 +1,8 @@
-"""Jedyne źródło prawdy o składni i sile wiązania operatorów.
+"""The single source of truth for operator syntax and binding strength.
 
-Czerpią stąd: skaner wyrażeń, normalizator zapisu, generator zapisu symbolicznego i walidator
-znaków. Style wizualne celowo tu nie należą — zmieniają się z innego powodu i mieszkają
-w `presentation/theme.py`.
+The scanner, the normalizer, the expression writer and the character validator all derive from
+here. Visual styling deliberately does not: it changes for a different reason and lives in
+`presentation/theme.py`.
 """
 
 from dataclasses import dataclass
@@ -10,7 +10,7 @@ from enum import Enum, StrEnum, auto
 
 
 class Operator(StrEnum):
-    """Operator logiczny; wartość enuma jest zarazem słowem kluczowym postaci znormalizowanej."""
+    """A logical operator; the enum value doubles as the normalized keyword."""
 
     NOT = "NOT"
     AND = "AND"
@@ -21,39 +21,39 @@ class Operator(StrEnum):
 
 
 class Arity(Enum):
-    """Ile argumentów przyjmuje operator w drzewie."""
+    """How many operands an operator takes in the tree."""
 
     UNARY = auto()
     BINARY = auto()
-    ASSOCIATIVE = auto()  # AND i OR spłaszczają się do dowolnej liczby argumentów
+    ASSOCIATIVE = auto()  # AND and OR flatten to any number of operands
 
 
 @dataclass(frozen=True, slots=True)
 class OperatorSpec:
-    """Pełny opis jednego operatora: jak się go zapisuje i jak mocno wiąże."""
+    """One operator: how it is written and how tightly it binds."""
 
     operator: Operator
-    symbol: str  # kanoniczny zapis wyjściowy
+    symbol: str  # canonical output form
     aliases: tuple[str, ...]  # wszystkie akceptowane zapisy symboliczne
-    precedence: int  # wyższa liczba = mocniejsze wiązanie
+    precedence: int  # higher number binds tighter
     arity: Arity
 
     @property
     def keyword(self) -> str:
-        """Słowo kluczowe w postaci znormalizowanej, np. 'AND'."""
+        """The normalized keyword, e.g. 'AND'."""
         return self.operator.value
 
 
-# Kolejność podręcznikowa: ~ > & > XOR > | > => > <=>. XOR wypada między & a | tak samo, jak `^`
-# między `&` a `|` w Pythonie.
+# Textbook order: ~ > & > XOR > | > => > <=>. XOR sits between & and | just as `^` sits between
+# `&` and `|` in Python.
 #
-# Żadne dwa operatory nie dzielą poziomu, i to jest wymóg, nie zbieg okoliczności: przy remisie
-# o korzeniu decyduje pozycja operatora w tekście, a nie siła wiązania, więc ten sam zestaw
-# operatorów wiązałby się różnie zależnie od kolejności zapisu. Pilnuje tego test.
+# No two operators share a level, and that is a requirement rather than a coincidence: on a tie
+# the root is decided by position in the text instead of binding strength, so the same operators
+# would bind differently depending on how they were written. A test guards this.
 #
-# Implikacja jest jedynym operatorem niełącznym — dla p=q=r=F `(p=>q)=>r` daje F, a `p=>(q=>r)`
-# daje T — i wiąże w prawo, zgodnie z konwencją klasyczną. Dla &, |, XOR i <=> kierunek wiązania
-# jest niewidoczny w wynikach, bo wszystkie cztery są łączne.
+# Implication is the only non-associative operator — for p=q=r=F, `(p=>q)=>r` is F while
+# `p=>(q=>r)` is T — and binds to the right by classical convention. For &, |, XOR and <=> the
+# direction is invisible in the results, since all four are associative.
 OPERATORS: tuple[OperatorSpec, ...] = (
     OperatorSpec(Operator.EQ, "<=>", ("<=>",), 1, Arity.BINARY),
     OperatorSpec(Operator.IMP, "=>", ("==>", "=>"), 2, Arity.BINARY),
@@ -67,12 +67,12 @@ _BY_OPERATOR: dict[Operator, OperatorSpec] = {spec.operator: spec for spec in OP
 
 
 def spec_of(operator: Operator) -> OperatorSpec:
-    """Zwraca opis podanego operatora."""
+
     return _BY_OPERATOR[operator]
 
 
 def spec_for_keyword(keyword: str) -> OperatorSpec | None:
-    """Zwraca opis operatora o podanym słowie kluczowym albo None, gdy takiego nie ma."""
+    """The spec for a keyword, or None when no operator uses it."""
     try:
         return _BY_OPERATOR[Operator(keyword)]
     except ValueError:
@@ -80,20 +80,20 @@ def spec_for_keyword(keyword: str) -> OperatorSpec | None:
 
 
 def keywords_by_precedence() -> dict[str, int]:
-    """Słowo kluczowe -> priorytet, w postaci oczekiwanej przez skaner wyrażeń."""
+    """Keyword -> precedence, in the shape the scanner expects."""
     return {spec.keyword: spec.precedence for spec in OPERATORS}
 
 
 def keywords_with_arity(arity: Arity) -> tuple[str, ...]:
-    """Słowa kluczowe operatorów o podanej arności."""
+    """Keywords of the operators with the given arity."""
     return tuple(spec.keyword for spec in OPERATORS if spec.arity is arity)
 
 
 def aliases_longest_first() -> tuple[tuple[str, str], ...]:
-    """Pary (alias, słowo kluczowe) posortowane od najdłuższego aliasu.
+    """(alias, keyword) pairs, longest alias first.
 
-    Kolejność jest istotna: `=>` jest fragmentem `<=>` i `==>`, więc krótszy alias musi być
-    próbowany dopiero po dłuższych — inaczej równoważność rozpadnie się na implikację.
+    The order matters: `=>` is a fragment of `<=>` and `==>`, so the shorter alias must be tried
+    last, or equivalence falls apart into implication.
     """
     pairs = [(alias, spec.keyword) for spec in OPERATORS for alias in spec.aliases]
     return tuple(sorted(pairs, key=lambda pair: len(pair[0]), reverse=True))

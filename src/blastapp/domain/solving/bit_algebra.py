@@ -1,11 +1,7 @@
-"""Algebra zdaniowa oparta na bitowej tablicy prawdy.
+"""Propositional algebra over a bitwise truth table.
 
-Cała tablica prawdy siedzi w jednej liczbie całkowitej, a operacje logiczne to operacje bitowe
-na tej liczbie.
-
-`BitTable` jest mutowalna i **nie opuszcza tego modułu** — na zewnątrz wychodzi niemutowalny
-`TruthTable`. To jest granica, o którą chodzi w regule „niemutowalne granice, mutowalny
-rdzeń" (#22).
+`BitTable` is mutable and **never leaves this module** — an immutable `TruthTable` goes out
+instead. That is the boundary the "immutable edges, mutable core" rule (#22) is about.
 """
 
 from collections.abc import Sequence
@@ -17,8 +13,6 @@ from blastapp.domain.solving.truth_table import TruthTable
 
 
 class BitAlgebra(PropositionAlgebra[BitTable]):
-    """Reprezentuje zdanie jako tablicę prawdy w jednej liczbie."""
-
     def constant(self, value: bool) -> BitTable:
         return BitTable(initial_solution=1 if value else 0)
 
@@ -40,38 +34,31 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
         return left
 
     def implication(self, antecedent: BitTable, consequent: BitTable) -> BitTable:
-        """Implikacja jako `~poprzednik | następnik`.
-
-        Składana tutaj, a nie w tablicy bitowej, bo tablica wystawia tylko to, co numpy robi
-        jedną operacją. Implikacji nie robi, więc rozkład na negację i alternatywę należy do
-        algebry. Kosztuje tyle samo co wersja zrośnięta — sprawdzone, różnica mieści się w szumie.
-        """
+        """`~antecedent | consequent`, composed here because the table only exposes what numpy
+        does in a single operation."""
         antecedent.negate_in_place()
         antecedent.apply_in_place(Operator.OR, consequent)
         return antecedent
 
     def to_truth_table(self, proposition: BitTable) -> TruthTable:
-        """Sprowadza tablicę bitową do wspólnej postaci wyniku.
+        """Reduce to the shared result form.
 
-        Najpierw dopełnia luki w pozycjach bitowych. Zdanie może nie zawierać zmiennej o niższym
-        indeksie, bo wypadła przy uproszczeniu — `(a0 & ~a0) | a1` zostawia samo `a1` — a wtedy
-        pozostałe zmienne siedzą na złych bitach. Dopełnienie musi nastąpić po zakończeniu
-        wszystkich operacji, nie w trakcie.
+        Gaps in bit positions are filled first: a proposition may have lost a lower-indexed
+        variable to simplification — `(a0 & ~a0) | a1` leaves only `a1` — and the survivors would
+        then sit on the wrong bits. That has to happen after every operation, not during.
         """
         proposition.add_missed_variables()
         return TruthTable(proposition.variable_count(), proposition.solution)
 
     def _combine(self, operation: Operator, propositions: Sequence[BitTable]) -> BitTable:
-        """Łączy zdania parami, zawsze biorąc dwa najwęższe.
+        """Merge propositions pairwise, always taking the two narrowest.
 
-        Dołożenie zmiennej PODWAJA długość tablicy, więc kolejność decyduje o rozmiarze
-        wyników pośrednich.
-
-        Koniunkcja, która osiągnęła fałsz, i alternatywa, która osiągnęła prawdę, kończą się
-        natychmiast: dalsze składniki nie mogą tego zmienić.
+        Adding a variable DOUBLES the table, so the order decides how large the intermediates get.
+        A conjunction that reached false and a disjunction that reached true stop immediately: the
+        remaining operands cannot change either.
         """
         if len(propositions) < 2:
-            raise ValueError(f"Operacja {operation} wymaga co najmniej dwóch argumentów")
+            raise ValueError(f"Operation {operation} needs at least two operands")
 
         pending = sorted(propositions, key=self._width_key, reverse=True)
         while len(pending) > 1:
@@ -84,26 +71,22 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
 
     @staticmethod
     def _is_settled(operation: Operator, result: BitTable) -> bool:
-        """Czy wynik nie może się już zmienić niezależnie od pozostałych składników."""
         return (operation is Operator.AND and result.is_false()) or (
             operation is Operator.OR and result.is_true()
         )
 
     @staticmethod
     def _width_key(table: BitTable) -> tuple[int, int]:
-        """Miara szerokości: najwyższy indeks zmiennej, a przy remisie ich liczba.
+        """Highest variable index, then how many variables there are.
 
-        Najwyższy indeks mówi, jak szeroka tablica wyjdzie po dopełnieniu luk, i grupuje
-        zdania z tego samego zakresu zmiennych — dzięki temu łączone pary często dzielą
-        zmienne i nie trzeba ich sobie dorabiać. Liczba zmiennych rozstrzyga remisy, bo to
-        ona wyznacza szerokość TERAZ; bez niej zdania o jednakowym zakresie trafiają na
-        siebie przypadkowo.
+        The highest index says how wide the table becomes once gaps are filled, and it groups
+        propositions over the same variable range, so merged pairs often already share variables.
+        The count breaks ties because it is what sets the width right now.
         """
         return table.highest_index(), table.variable_count()
 
     @classmethod
     def _insert_by_width(cls, pending: list[BitTable], table: BitTable) -> None:
-        """Wstawia tablicę tak, by lista pozostała posortowana malejąco po szerokości."""
         key = cls._width_key(table)
         position = len(pending)
         while position > 0 and cls._width_key(pending[position - 1]) < key:

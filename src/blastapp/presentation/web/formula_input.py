@@ -1,4 +1,4 @@
-"""Zbiera wyrażenie do rozwiązania: wpisane ręcznie albo wybrane z listy przykładów."""
+"""Collects the expression to solve: typed in or picked from the samples."""
 
 import streamlit as st
 
@@ -6,13 +6,7 @@ from blastapp.presentation.samples import all_tautologies
 
 
 def render_formula_input(texts: dict[str, str]) -> str | None:
-    """
-    Rysuje oba sposoby podania formuły i zwraca wybraną.
-
-    :param texts: Teksty interfejsu.
-    :return: Wyrażenie do rozwiązania albo None, gdy użytkownik jeszcze nic nie zatwierdził.
-    :rtype: str | None
-    """
+    """Draw both input paths and return the chosen formula."""
     typed_column, sample_column = st.columns(2)
 
     with typed_column:

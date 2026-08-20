@@ -1,1 +1,1 @@
-"""Teksty interfejsu w obu językach."""
+"""Interface texts in both languages."""

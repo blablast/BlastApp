@@ -18,7 +18,7 @@ class BenchmarkSettings:
     results_path: Path = REPO_ROOT / "benchmarks" / "results" / "results.csv"
 
     def total_runs(self, engine_count: int) -> int:
-        """Ile pojedynczych pomiarów obejmie przebieg."""
+        """How many individual measurements the run covers."""
         return len(self.variable_range) * self.tests_per_case * engine_count
 
 
