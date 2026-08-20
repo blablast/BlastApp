@@ -10,6 +10,7 @@ rdzeń" (#22).
 
 from collections.abc import Sequence
 
+from blastapp.domain.operators import Operator
 from blastapp.domain.representations.bit_table import BitTable
 from blastapp.domain.solving.algebra import PropositionAlgebra
 from blastapp.domain.solving.truth_table import TruthTable
@@ -29,17 +30,17 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
         return proposition
 
     def conjunction(self, propositions: Sequence[BitTable]) -> BitTable:
-        return self._combine("AND", propositions)
+        return self._combine(Operator.AND, propositions)
 
     def disjunction(self, propositions: Sequence[BitTable]) -> BitTable:
-        return self._combine("OR", propositions)
+        return self._combine(Operator.OR, propositions)
 
     def equivalence(self, left: BitTable, right: BitTable) -> BitTable:
-        left.apply_in_place("EQ", right)
+        left.apply_in_place(Operator.EQ, right)
         return left
 
     def implication(self, antecedent: BitTable, consequent: BitTable) -> BitTable:
-        antecedent.apply_in_place("IMP", consequent)
+        antecedent.apply_in_place(Operator.IMP, consequent)
         return antecedent
 
     def to_truth_table(self, proposition: BitTable) -> TruthTable:
@@ -53,7 +54,7 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
         proposition.add_missed_variables()
         return TruthTable(proposition.variable_count(), proposition.solution)
 
-    def _combine(self, operation: str, propositions: Sequence[BitTable]) -> BitTable:
+    def _combine(self, operation: Operator, propositions: Sequence[BitTable]) -> BitTable:
         """Łączy zdania parami, zawsze biorąc dwa najwęższe.
 
         Dołożenie zmiennej PODWAJA długość tablicy, więc kolejność decyduje o rozmiarze
@@ -70,15 +71,15 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
             left, right = pending.pop(), pending.pop()
             left.apply_in_place(operation, right)
             if self._is_settled(operation, left):
-                return BitTable(initial_solution=0 if operation == "AND" else 1)
+                return BitTable(initial_solution=0 if operation is Operator.AND else 1)
             self._insert_by_width(pending, left)
         return pending[0]
 
     @staticmethod
-    def _is_settled(operation: str, result: BitTable) -> bool:
+    def _is_settled(operation: Operator, result: BitTable) -> bool:
         """Czy wynik nie może się już zmienić niezależnie od pozostałych składników."""
-        return (operation == "AND" and result.is_false()) or (
-            operation == "OR" and result.is_true()
+        return (operation is Operator.AND and result.is_false()) or (
+            operation is Operator.OR and result.is_true()
         )
 
     @staticmethod
