@@ -1,41 +1,46 @@
+# BlastApp — solving propositional formulas with binary logic
 
-# BlastApp – Aplikacja rozwiązywania wyrażeń logicznych (Logika Binarna)
+## What it is
 
-## Opis projektu
-
-**BlastApp** to interaktywna aplikacja GUI (oparta na frameworku [Streamlit](https://streamlit.io/)) służąca do rozwiązywania i analizowania zdań logicznych przy użyciu koncepcji **Logiki Binarnej**. Zaimplementowano dwa silniki: algebraiczny **OTA Solver** i bitowy **BlastSolver**, umożliwiające ultraszybkie znajdowanie *wszystkich* rozwiązań zadanych formuł logicznych. Aplikacja pozwala na wizualizację drzew logicznych, obliczenie funkcji OTA oraz prezentację wyników – bez potrzeby konstruowania tradycyjnych tabel prawdy.
+**BlastApp** is an interactive GUI application (built on [Streamlit](https://streamlit.io/)) for
+solving and analysing propositional sentences using **binary logic**. Two engines are implemented:
+the algebraic **OTA Solver** and the bitwise **Blast Solver**, both of which find *all* satisfying
+assignments of a formula at once. The application visualises syntax trees, computes the OTA
+function and presents results — without ever enumerating a traditional truth table row by row.
 
 ---
 
-## Wprowadzenie – Logika Binarna
+## Binary logic in brief
 
-**Logika Binarna** łączy klasyczną algebrę boolowską (gdzie 1 = PRAWDA, 0 = FAŁSZ) z tzw. algebrą binarną, wykorzystującą funkcję OTA do opisu rozwiązań. Innowacją jest traktowanie 0 i 1 jako liczb całkowitych, a nie symboli.
+**Binary logic** joins classical Boolean algebra (1 = TRUE, 0 = FALSE) with an algebra that
+describes solutions through the OTA function. The idea is to treat 0 and 1 as integers rather than
+as symbols.
 
-### Zalety:
+### What that buys:
 
-- **Brak tabel prawdy** – wszystkie kombinacje wyznacza się za pomocą funkcji OTA, jednorazowo.
-- **Brak konieczności znajomości praw logiki** – operacje logiczne tłumaczy się na działania algebraiczne.
-- **Szybkość** – złożone zdania (np. z 20 zmiennymi) rozwiązywane są w ułamku sekundy.
+- **No truth tables** — every combination follows from the OTA function, computed once.
+- **No need to recall logical laws** — logical operations become arithmetic ones.
+- **Speed** — a formula over twenty variables is solved in a fraction of a second.
 
-**Funkcja OTA** (One-hot Truth Assignment) zapisuje wynik dla wszystkich kombinacji n zmiennych jako ciąg $2^n$ współczynników $t_i$. Przykład dla 2 zmiennych:  
+The **OTA function** encodes the result for all combinations of n variables as a sequence of
+$2^n$ coefficients $t_i$. For two variables:
 $\Phi = t_3\cdot a_1 a_0 + t_2\cdot a_1 + t_1\cdot a_0 + t_0$
 
 ---
 
-## Instalacja i uruchomienie
+## Installation and running
 
-Aplikację uruchomisz na **Windows**, **Linux** lub **macOS**.
+The application runs on **Windows**, **Linux** and **macOS**.
 
-### Wymagania:
+### Requirements:
 
 - Python 3.13+
-- [uv](https://docs.astral.sh/uv/) – menedżer pakietów i środowisk (zastępuje `pip` oraz `venv`)
-- **Graphviz** – *zalecany*. Drzewo logiczne zawsze pokazuje się w postaci tekstowej, więc
-  aplikacja działa i bez niego. Graphviz dokłada rysunek: w GUI obrazek PNG renderowany
-  lokalnie, a w `solve.py` zapis drzewa do pliku. Bez niego GUI próbuje narysować drzewo
-  po stronie przeglądarki, co bywa zawodne.
+- [uv](https://docs.astral.sh/uv/) — package and environment manager (replaces `pip` and `venv`)
+- **Graphviz** — *recommended*. The syntax tree is always shown as text, so the application works
+  without it. Graphviz adds the drawing: a locally rendered PNG in the GUI, and a file written by
+  `solve.py`. Without it the GUI falls back to rendering in the browser, which is less reliable.
 
-### Instalacja uv:
+### Installing uv:
 
 ```bash
 # macOS / Linux
@@ -45,9 +50,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-Alternatywnie: `brew install uv` (macOS) lub `pipx install uv`.
+Alternatively: `brew install uv` (macOS) or `pipx install uv`.
 
-### Instalacja Graphviza (zalecana):
+### Installing Graphviz (recommended):
 
 ```bash
 # macOS
@@ -57,146 +62,157 @@ brew install graphviz
 sudo apt install graphviz
 ```
 
-Na **Windows** pobierz instalator z [graphviz.org](https://graphviz.org/download/) i dodaj katalog
-`bin` do zmiennej PATH.
+On **Windows**, download the installer from [graphviz.org](https://graphviz.org/download/) and add
+its `bin` directory to PATH.
 
-Sprawdzenie, czy zadziałało:
+To check that it worked:
 
 ```bash
-    dot -V          # powinno wypisać wersję, np. "dot - graphviz version 15.1.1"
+dot -V          # should print a version, e.g. "dot - graphviz version 12.2.1"
 ```
 
-To pakiet systemowy, a nie zależność Pythona — `uv sync` go nie zainstaluje. Pythonowy pakiet
-`graphviz` jest tylko nakładką na tę binarkę.
+Graphviz is a system package, not a Python dependency — `uv sync` will not install it. The Python
+`graphviz` package is only a wrapper around that binary.
 
-### Instalacja zależności:
+### Installing dependencies:
 
-1. W terminalu przejdź do katalogu z projektem.
-2. Utwórz środowisko i zainstaluj zależności jednym poleceniem:
+1. Change into the project directory.
+2. Create the environment and install everything with one command:
     ```bash
     uv sync
     ```
-   `uv` sam pobierze właściwą wersję Pythona, utworzy `.venv` i zainstaluje dokładnie te wersje
-   pakietów, które są zapisane w pliku `uv.lock`. Nie musisz ręcznie aktywować środowiska.
+   `uv` fetches the right Python version, creates `.venv` and installs exactly the versions pinned
+   in `uv.lock`. There is no environment to activate by hand.
 
-### Uruchomienie:
+### Running:
 
-W folderze projektu wpisz:
+From the project directory:
+
 ```bash
-    uv run streamlit run app.py
-```
-Po chwili w przeglądarce otworzy się strona aplikacji (domyślnie: http://localhost:8501).
-
-Wyrażenie możesz też rozwiązać bezpośrednio z linii poleceń:
-```bash
-    uv run python solve.py "(a1 & ~a0) | a2"
-    uv run python solve.py "(a1 & ~a0) | a2" --solver blast   # ota | blast | both
+uv run streamlit run app.py
 ```
 
-Porównanie wydajności z solverami PySAT i SymPy:
+The application opens in a browser (by default at http://localhost:8501).
+
+An expression can also be solved straight from the command line:
+
 ```bash
-    uv run python -m blastapp.benchmarks.main
+uv run python solve.py "(a1 & ~a0) | a2"
+uv run python solve.py "(a1 & ~a0) | a2" --solver blast   # ota | blast | both
 ```
-Wyniki trafiają do `benchmarks/results/results.csv`. Przebieg w pełnej konfiguracji jest długi -
-zakres i liczbę powtórzeń zmienisz przez `BenchmarkSettings`.
 
-### Składnia wyrażeń
+Performance comparison against external solvers:
 
-| Operator | Zapis | Wiązanie |
+```bash
+uv run python -m blastapp.benchmarks.main
+```
+
+Results land in `benchmarks/results/results.csv`. A full run takes a long time; the range and the
+number of repetitions are set through `BenchmarkSettings`.
+
+The suite includes a **naive DPLL model counter** as a reference point. It is deliberately plain —
+unit propagation plus `2^(free variables)`, no caching, no component decomposition — and it exists
+to show when an engine genuinely contributes something. Reading the chart without that column is
+misleading.
+
+### Expression syntax
+
+| Operator | Notation | Binding |
 | --- | --- | --- |
-| negacja | `~` `⌐` `!` `NOT` | najmocniejsze |
-| koniunkcja | `&` `∧` `/\` `AND` | |
-| alternatywa wykluczająca | `^` `XOR` | |
-| alternatywa | `\|` `∨` `\/` `OR` | |
-| implikacja | `=>` `==>` `IMP` | |
-| równoważność | `<=>` `EQ` | najslabsze |
+| negation | `~` `⌐` `!` `NOT` | tightest |
+| conjunction | `&` `∧` `/\` `AND` | |
+| exclusive or | `^` `XOR` | |
+| disjunction | `\|` `∨` `\/` `OR` | |
+| implication | `=>` `==>` `IMP` | |
+| equivalence | `<=>` `EQ` | loosest |
 
-Priorytety są zgodne z konwencją podręcznikową (`¬ > ∧ > XOR > ∨ > → > ↔`). Implikacja wiąże
-prawostronnie: `p => q => r` znaczy `p => (q => r)`. To jedyny operator, dla ktorego kierunek
-wiązania zmienia wynik — pozostałe są łączne.
+Precedence follows the textbook convention (`¬ > ∧ > XOR > ∨ > → > ↔`). Implication binds to the
+right: `p => q => r` means `p => (q => r)`. It is the only operator whose binding direction changes
+the result — the others are associative.
 
-Zmienne można nazywać dowolnie (`p`, `q`, `x1`). Nazwy postaci `aN` są traktowane szczególnie:
-cyfra wyznacza pozycję bitu, więc `a5` zajmuje pozycję 5.
+Variables can be named freely (`p`, `q`, `x1`). Names of the form `aN` are special: the digit sets
+the bit position, so `a5` occupies position 5.
 
-### Zarządzanie zależnościami:
+### Managing dependencies:
 
 ```bash
-    uv add <pakiet>        # dodaj nową zależność (aktualizuje pyproject.toml i uv.lock)
-    uv remove <pakiet>     # usuń zależność
-    uv lock --upgrade      # zaktualizuj zależności do najnowszych wersji
+uv add <package>        # add a dependency (updates pyproject.toml and uv.lock)
+uv remove <package>     # remove one
+uv lock --upgrade       # upgrade to the newest versions
 ```
 
-Zależności projektu opisane są w pliku `pyproject.toml`, a ich dokładne, zablokowane
-wersje – w `uv.lock`. Oba pliki należy trzymać w repozytorium.
+Dependencies are declared in `pyproject.toml`, their exact pinned versions in `uv.lock`. Both files
+belong in the repository.
 
 ---
 
-## Przykład działania
+## Example
 
-Załóżmy wyrażenie:
+Take the expression:
 (a0 AND a1) OR (a1 AND a2) OR (a2 AND a0)
 
-Dla 3 zmiennych aplikacja automatycznie:
+For three variables the application automatically:
 
-- Wyświetli **drzewo logiczne**:
+- shows the **syntax tree**:
 
-  ![Drzewo logiczne](img/screenshot_tree.png)
+  ![Syntax tree](img/screenshot_tree.png)
 
-- Obliczy **funkcję OTA** oraz współczynniki dla wszystkich kombinacji:
+- computes the **OTA function** and its coefficients for every combination:
 
-  ![Tabela OTA](img/screenshot_ota.png)
+  ![OTA table](img/screenshot_ota.png)
 
-- Pokaże **tabele wyników**:
+- presents the **result tables**:
 
-  ![Wyniki](img/screenshot_results.png)
+  ![Results](img/screenshot_results.png)
 
-- Porówna czasy działania solverów (OTA/Blast):
+- compares the engines' timings (OTA / Blast):
 
-  ![Porównanie solverów](img/screenshot_timing.png)
+  ![Engine comparison](img/screenshot_timing.png)
 
 ---
 
-## Dla programistów
+## For developers
 
-### Struktura
+### Layout
 
 ```
 src/blastapp/
-├── domain/          — parser wyrażeń, drzewo składniowe, algebry i reprezentacje.
-│                      Nie zależy od pandas, Streamlita ani Graphviza.
-├── presentation/    — CLI, GUI, renderowanie tekstu, LaTeX-a, HTML-a i wykresów
-└── benchmarks/      — porównanie z zewnętrznymi solverami SAT
+├── domain/          — expression parser, syntax tree, algebras and representations.
+│                      Depends on no pandas, Streamlit or Graphviz.
+├── presentation/    — CLI, GUI, text, LaTeX, HTML and chart rendering
+└── benchmarks/      — comparison against external solvers
 ```
 
-Kierunek zależności jest jednostronny: `presentation` i `benchmarks` znają `domain`, nigdy
-odwrotnie. Pilnuje tego test `tests/test_layering.py`.
+Dependencies point one way: `presentation` and `benchmarks` know `domain`, never the other way
+round. `tests/test_layering.py` enforces that.
 
-Dodanie trzeciego silnika sprowadza się do implementacji `PropositionAlgebra` i jednego wpisu
-w `ENGINES` — CLI, panel boczny GUI i wykres czasów iterują po rejestrze.
+Adding a third engine means implementing `PropositionAlgebra` and one entry in `ENGINES` — the CLI,
+the GUI sidebar and the timing chart all iterate the registry.
 
-### Testy i jakość
+### Tests and quality
 
 ```bash
-    uv run pytest                                    # ok. 8 s
-    uv run ruff check . && uv run ruff format --check .
-    uv run mypy
+uv run pytest                                    # about 8 s
+uv run ruff check . && uv run ruff format --check .
+uv run mypy
 ```
 
-Testy sprawdzają oba silniki wobec **niezależnego wzorca**: `tests/reference_evaluator.py` liczy
-formułę naiwnie, po wszystkich `2^n` wartościowaniach, nie korzystając z kodu solverów.
+The tests check both engines against an **independent oracle**: `tests/reference_evaluator.py`
+evaluates a formula naively over all `2^n` assignments, using no solver code at all. Agreement
+between two engines that share a bug would prove nothing.
 
-Projekt trzyma się zasad opisanych w `clean_code.md`.
+The project follows the rules in `clean_code.md`.
 
-## Autor
+## Author
 
-**Błażej Strus**  
-  e-mail: b.strus@gmail.com  
-  tel: +48 501 165 889
+**Błażej Strus**
+  e-mail: b.strus@gmail.com
+  phone: +48 501 165 889
 
 ---
 
-## Licencja
+## License
 
-Brak określonej licencji. Jeśli chcesz użyć kodu – skontaktuj się z autorem.
+No license specified. If you would like to use the code, please contact the author.
 
 ---
