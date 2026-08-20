@@ -3,11 +3,12 @@
 Rozmiary są małe celowo — to testy mechaniki, a nie pomiar wydajności (#24 Fast).
 """
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 import pytest
 
 from blastapp.benchmarks.adapters.blastapp_engines import BlastAdapter, OtaAdapter
+from blastapp.benchmarks.adapters.naive_dpll import NaiveDpllAdapter
 from blastapp.benchmarks.adapters.pysat_solver import PySatAdapter
 from blastapp.benchmarks.engine_adapter import SolverAdapter
 from blastapp.benchmarks.problem_generator import SatProblemGenerator
@@ -15,7 +16,13 @@ from blastapp.benchmarks.runner import BenchmarkRunner
 from blastapp.benchmarks.settings import BenchmarkSettings
 from blastapp.domain.expressions.clauses import formula_from_clauses
 
-ADAPTERS = [BlastAdapter, OtaAdapter, PySatAdapter]
+# Fabryki, nie klasy — tak samo jak przyjmuje je `BenchmarkRunner`.
+ADAPTERS: list[Callable[[], SolverAdapter]] = [
+    BlastAdapter,
+    OtaAdapter,
+    NaiveDpllAdapter,
+    PySatAdapter,
+]
 
 
 class TestProblemGenerator:
@@ -68,6 +75,13 @@ class TestAdaptersAgree:
         expected = sum(1 for _ in range(1 << formula.variable_count))  # tylko rozmiar tablicy
         assert expected == 8
         assert BlastAdapter().count_solutions(clauses) == 4
+
+    def test_baseline_counts_over_the_same_universe_as_the_engines(self) -> None:
+        """Uniwersum sięga największej użytej zmiennej, więc nieużyte pozycje też się liczą."""
+        clauses = [[1, -3]]  # a0 i a2, ale a1 leży pomiędzy: osiem wartościowań, nie cztery
+        assert formula_from_clauses(clauses).variable_count == 3
+        assert NaiveDpllAdapter().count_solutions(clauses) == 6
+        assert BlastAdapter().count_solutions(clauses) == 6
 
 
 class TestRunner:
