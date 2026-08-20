@@ -165,8 +165,13 @@ class BitTable:
 
         Dopasowanie jest wyczerpujące wobec `Operator`, więc dopisanie tam nowego operatora
         zatrzyma sprawdzanie typów właśnie tutaj — a nie dopiero na wyjątku w czasie działania.
-        `NOT` jest jednoargumentowy i ma `negate_in_place`, a `XOR` evaluator rozkłada na
-        negację równoważności; oba są tu błędem wołającego.
+        Obsługiwane są operacje, które numpy wykonuje jedną instrukcją: `AND`, `OR` oraz `EQ`
+        przez natywny `XOR`. `NOT` jest jednoargumentowy i ma `negate_in_place`, a `XOR` i `IMP`
+        algebra składa z pozostałych — dla nich wejście tutaj jest błędem wołającego.
+
+        Równoważność zostaje mimo możliwości złożenia: wyprowadzona z samych `AND`, `OR` i `NOT`
+        wymaga pięciu przebiegów i dwóch kopii całej tablicy, co na łańcuchu `a <=> b <=> c`
+        kosztuje 1.75x.
 
         :param operation: Operacja do wykonania.
         :type operation: Operator
@@ -182,12 +187,10 @@ class BitTable:
                 self.words = np.bitwise_and(self.words, normalized_other.words)
             case Operator.OR:
                 self.words = np.bitwise_or(self.words, normalized_other.words)
-            case Operator.IMP:
-                self.words = np.bitwise_or(self._negated_words(), normalized_other.words)
             case Operator.EQ:
                 self.words = self._negated(np.bitwise_xor(self.words, normalized_other.words))
-            case Operator.NOT | Operator.XOR:
-                raise ValueError(f"{operation} nie jest tu operacją dwuargumentową")
+            case Operator.NOT | Operator.XOR | Operator.IMP:
+                raise ValueError(f"{operation} nie jest tu operacją podstawową")
             case _:
                 assert_never(operation)
 

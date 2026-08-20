@@ -40,7 +40,14 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
         return left
 
     def implication(self, antecedent: BitTable, consequent: BitTable) -> BitTable:
-        antecedent.apply_in_place(Operator.IMP, consequent)
+        """Implikacja jako `~poprzednik | następnik`.
+
+        Składana tutaj, a nie w tablicy bitowej, bo tablica wystawia tylko to, co numpy robi
+        jedną operacją. Implikacji nie robi, więc rozkład na negację i alternatywę należy do
+        algebry. Kosztuje tyle samo co wersja zrośnięta — sprawdzone, różnica mieści się w szumie.
+        """
+        antecedent.negate_in_place()
+        antecedent.apply_in_place(Operator.OR, consequent)
         return antecedent
 
     def to_truth_table(self, proposition: BitTable) -> TruthTable:
