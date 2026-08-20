@@ -54,10 +54,10 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
         return TruthTable(proposition.variable_count(), proposition.solution)
 
     def _combine(self, operation: str, propositions: Sequence[BitTable]) -> BitTable:
-        """Łączy zdania parami, zawsze biorąc dwa o najniższym maksymalnym indeksie zmiennej.
+        """Łączy zdania parami, zawsze biorąc dwa najwęższe.
 
-        Niższy maksymalny indeks znaczy węższa tablica, a dołożenie zmiennej PODWAJA jej
-        długość — taka kolejność trzyma wyniki pośrednie małe.
+        Dołożenie zmiennej PODWAJA długość tablicy, więc kolejność decyduje o rozmiarze
+        wyników pośrednich.
 
         Koniunkcja, która osiągnęła fałsz, i alternatywa, która osiągnęła prawdę, kończą się
         natychmiast: dalsze składniki nie mogą tego zmienić.
@@ -65,7 +65,7 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
         if len(propositions) < 2:
             raise ValueError(f"Operacja {operation} wymaga co najmniej dwóch argumentów")
 
-        pending = sorted(propositions, key=lambda table: max(table.get_indices()), reverse=True)
+        pending = sorted(propositions, key=self._width_key, reverse=True)
         while len(pending) > 1:
             left, right = pending.pop(), pending.pop()
             left.apply_in_place(operation, right)
@@ -82,10 +82,22 @@ class BitAlgebra(PropositionAlgebra[BitTable]):
         )
 
     @staticmethod
-    def _insert_by_width(pending: list[BitTable], table: BitTable) -> None:
+    def _width_key(table: BitTable) -> tuple[int, int]:
+        """Miara szerokości: najwyższy indeks zmiennej, a przy remisie ich liczba.
+
+        Najwyższy indeks mówi, jak szeroka tablica wyjdzie po dopełnieniu luk, i grupuje
+        zdania z tego samego zakresu zmiennych — dzięki temu łączone pary często dzielą
+        zmienne i nie trzeba ich sobie dorabiać. Liczba zmiennych rozstrzyga remisy, bo to
+        ona wyznacza szerokość TERAZ; bez niej zdania o jednakowym zakresie trafiają na
+        siebie przypadkowo.
+        """
+        return table.highest_index(), table.variable_count()
+
+    @classmethod
+    def _insert_by_width(cls, pending: list[BitTable], table: BitTable) -> None:
         """Wstawia tablicę tak, by lista pozostała posortowana malejąco po szerokości."""
-        width = max(table.get_indices())
+        key = cls._width_key(table)
         position = len(pending)
-        while position > 0 and max(pending[position - 1].get_indices()) < width:
+        while position > 0 and cls._width_key(pending[position - 1]) < key:
             position -= 1
         pending.insert(position, table)
