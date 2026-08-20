@@ -8,6 +8,7 @@ from dataclasses import asdict
 import pandas as pd
 
 from blastapp.benchmarks.adapters.blastapp_engines import BlastAdapter, OtaAdapter
+from blastapp.benchmarks.adapters.naive_dpll import NaiveDpllAdapter
 from blastapp.benchmarks.adapters.pysat_solver import PySatAdapter
 from blastapp.benchmarks.adapters.sympy_solver import SymPyAdapter
 from blastapp.benchmarks.runner import BenchmarkRunner, Measurement
@@ -15,7 +16,10 @@ from blastapp.benchmarks.settings import DEFAULT_SETTINGS, BenchmarkSettings
 
 # PyEDA celowo poza zestawem: `satisfy_all()` w wersji 0.29.0 potrafi zabić cały proces
 # sygnałem SIGSEGV, którego nie da się przechwycić, więc przerywa cały przebieg.
-DEFAULT_ADAPTERS = (BlastAdapter, OtaAdapter, PySatAdapter, SymPyAdapter)
+#
+# Naiwny DPLL jest punktem odniesienia, nie konkurencją: jeśli silnik go nie bije, to sam
+# pomiar jest informacją, a nie porażką przebiegu.
+DEFAULT_ADAPTERS = (BlastAdapter, OtaAdapter, NaiveDpllAdapter, PySatAdapter, SymPyAdapter)
 
 
 def run(settings: BenchmarkSettings = DEFAULT_SETTINGS) -> list[Measurement]:
